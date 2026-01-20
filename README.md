@@ -15,16 +15,16 @@
 - **后端**: Python FastAPI, SQLite3
 - **前端**: HTML5, CSS3, 原生 JavaScript
 
-## 安装
+## 安装 (推荐使用 `uv` 管理器)
 
 ```bash
-pip install -e .
+uv sync
 ```
 
 ## 运行
 
 ```bash
-python main.py
+uv run main.py
 ```
 
 应用将在 http://localhost:8000 启动
