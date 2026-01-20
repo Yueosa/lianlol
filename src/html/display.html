@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>撸了吗 - 打卡记录</title>
+    <link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>💦 撸了吗</h1>
+            <p class="subtitle">快乐时光记录册</p>
+        </header>
+
+        <nav class="nav-links">
+            <a href="/">✍️ 记录一次</a>
+            <a href="/display" class="active">📖 历史记录</a>
+        </nav>
+
+        <main class="display-content">
+            <div class="stats">
+                <div class="stat-item">
+                    <span class="stat-label">总次数</span>
+                    <span class="stat-value" id="totalCount">0</span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-label">当前页</span>
+                    <span class="stat-value" id="currentPage">1</span>
+                </div>
+            </div>
+
+            <div class="checkins-list" id="checkinsList">
+                <div class="loading">加载中...</div>
+            </div>
+
+            <div class="pagination" id="pagination"></div>
+        </main>
+
+        <footer>
+            <p>© 2026 撸了吗 | 记录快乐，享受生活</p>
+        </footer>
+    </div>
+
+    <div class="modal" id="imageModal">
+        <span class="modal-close">&times;</span>
+        <img class="modal-content" id="modalImage">
+        <div class="modal-caption" id="modalCaption"></div>
+    </div>
+
+    <script src="/static/js/display.js"></script>
+</body>
+</html>

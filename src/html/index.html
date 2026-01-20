@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>撸了吗 - 打卡提交</title>
+    <link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>💦 撸了吗</h1>
+            <p class="subtitle">记录每一次快乐时光</p>
+        </header>
+
+        <nav class="nav-links">
+            <a href="/" class="active">✍️ 记录一次</a>
+            <a href="/display">📖 历史记录</a>
+        </nav>
+
+        <main class="checkin-form">
+            <form id="checkinForm">
+                <div class="form-group">
+                    <label for="content">📝 这次用的什么</label>
+                    <textarea 
+                        id="content" 
+                        name="content" 
+                        rows="6" 
+                        placeholder="记录一下吧... 本子链接、感想、用的什么素材..."
+                        required
+                    ></textarea>
+                    <div class="char-count">
+                        <span id="charCount">0</span> 字
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label>🖼️ 上传图片/视频 (最大 20MB)</label>
+                    <div class="upload-area" id="uploadArea">
+                        <div class="upload-icon">📁</div>
+                        <p>点击或拖拽文件到这里</p>
+                        <p class="upload-hint">支持: JPG, PNG, GIF, MP4, WEBM</p>
+                        <input 
+                            type="file" 
+                            id="fileInput" 
+                            name="files" 
+                            multiple 
+                            accept="image/*,video/*"
+                            hidden
+                        >
+                    </div>
+                </div>
+
+                <div class="preview-container" id="previewContainer"></div>
+
+                <div class="form-actions">
+                    <button type="button" class="btn btn-secondary" id="resetBtn">
+                        🔄 清空
+                    </button>
+                    <button type="submit" class="btn btn-primary btn-submit" id="submitBtn">
+                        <span class="btn-text">💦 记录这一发</span>
+                        <span class="btn-icon">→</span>
+                    </button>
+                </div>
+            </form>
+
+            <div class="message" id="message"></div>
+        </main>
+
+        <footer>
+            <p>© 2026 撸了吗 | 记录快乐，享受生活</p>
+        </footer>
+    </div>
+
+    <script src="/static/js/submit.js"></script>
+</body>
+</html>
