@@ -1,6 +1,6 @@
 [project]
 name = "lol"
-version = "0.1.0"
+version = "0.2.0"
 description = "撸了吗 - 一个支持多媒体的打卡系统"
 readme = "README.md"
 requires-python = ">=3.12"
