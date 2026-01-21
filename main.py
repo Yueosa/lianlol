@@ -1,8 +1,8 @@
 """撸了吗 - 打卡系统主程序"""
 from pathlib import Path
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 from fastapi.staticfiles import StaticFiles
-from fastapi.responses import FileResponse
+from fastapi.templating import Jinja2Templates
 import uvicorn
 
 from src.api.routes import router as api_router
@@ -15,22 +15,30 @@ app = FastAPI(title="撸了吗", description="一个支持多媒体的打卡系�
 static_dir = Path(__file__).parent / "src" / "static"
 app.mount("/static", StaticFiles(directory=static_dir), name="static")
 
+# 配置 Jinja2 模板
+templates_dir = Path(__file__).parent / "src" / "html"
+templates = Jinja2Templates(directory=templates_dir)
+
 # 挂载 API 路由
 app.include_router(api_router)
 
 
 @app.get("/")
-async def index():
+async def index(request: Request):
     """首页 - 打卡提交页面"""
-    html_path = Path(__file__).parent / "src" / "html" / "index.html"
-    return FileResponse(html_path)
+    return templates.TemplateResponse(
+        "index.jinja2",
+        {"request": request, "active_page": "index"}
+    )
 
 
 @app.get("/display")
-async def display():
+async def display(request: Request):
     """打卡展示页面"""
-    html_path = Path(__file__).parent / "src" / "html" / "display.html"
-    return FileResponse(html_path)
+    return templates.TemplateResponse(
+        "display.jinja2",
+        {"request": request, "active_page": "display"}
+    )
 
 
 def main():
