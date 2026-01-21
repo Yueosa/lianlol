@@ -36,9 +36,9 @@ async def display():
 def main():
     """启动应用"""
     print("🚀 启动撸了吗打卡系统...")
-    print("📍 访问地址: http://localhost:8000")
-    print("📝 打卡提交: http://localhost:8000/")
-    print("📊 打卡展示: http://localhost:8000/display")
+    print("📍 访问地址: http://localhost:8722")
+    print("📝 打卡提交: http://localhost:8722/")
+    print("📊 打卡展示: http://localhost:8722/display")
     print("=" * 50)
     
     uvicorn.run(
