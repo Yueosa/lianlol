@@ -12,6 +12,14 @@ class CheckIn:
     media_files: str = "[]"  # JSON 字符串，存储文件路径列表
     created_at: Optional[datetime] = None
     ip_address: Optional[str] = None
+    # VERSION 2.0 新增字段
+    nickname: str = "用户0721"
+    email: Optional[str] = None
+    qq: Optional[str] = None
+    url: Optional[str] = None
+    avatar: str = "🥰"
+    # VERSION 3.0 新增字段
+    love: int = 0
     
     def to_dict(self) -> dict:
         """转换为字典"""
@@ -20,5 +28,11 @@ class CheckIn:
             "content": self.content,
             "media_files": self.media_files,
             "created_at": self.created_at.isoformat() if self.created_at else None,
-            "ip_address": self.ip_address
+            "ip_address": self.ip_address,
+            "nickname": self.nickname,
+            "email": self.email,
+            "qq": self.qq,
+            "url": self.url,
+            "avatar": self.avatar,
+            "love": self.love
         }

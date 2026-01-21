@@ -7,13 +7,128 @@ const currentPageSpan = document.getElementById('currentPage');
 const imageModal = document.getElementById('imageModal');
 const modalImage = document.getElementById('modalImage');
 
+// 搜索面板元素
+const searchToggle = document.getElementById('searchToggle');
+const searchContentPanel = document.getElementById('searchContent');
+const searchNickname = document.getElementById('searchNickname');
+const searchEmail = document.getElementById('searchEmail');
+const searchContentKeyword = document.getElementById('searchContentKeyword');
+const excludeDefaultNickname = document.getElementById('excludeDefaultNickname');
+const excludeShortContent = document.getElementById('excludeShortContent');
+const minContentLength = document.getElementById('minContentLength');
+const resetSearchBtn = document.getElementById('resetSearch');
+const applySearchBtn = document.getElementById('applySearch');
+
+// 排序按钮
+const sortDescBtn = document.getElementById('sortDesc');
+const sortAscBtn = document.getElementById('sortAsc');
+const sortLoveBtn = document.getElementById('sortLove');
+
 let currentPage = 1;
 let totalPages = 1;
+let currentFilters = {};
+let currentSort = 'desc'; // 默认倒序（最新优先）
+let currentSortBy = 'id'; // 默认按ID排序
+
+// 搜索面板切换
+searchToggle.addEventListener('click', () => {
+    searchContentPanel.classList.toggle('show');
+    const icon = searchToggle.querySelector('.toggle-icon');
+    icon.textContent = searchContentPanel.classList.contains('show') ? '▲' : '▼';
+});
+
+// 重置搜索
+resetSearchBtn.addEventListener('click', () => {
+    searchNickname.value = '';
+    searchEmail.value = '';
+    searchContentKeyword.value = '';
+    excludeDefaultNickname.checked = false;
+    excludeShortContent.checked = false;
+    minContentLength.value = '10';
+    currentFilters = {};
+    loadCheckins(1);
+});
+
+// 应用搜索
+applySearchBtn.addEventListener('click', () => {
+    currentFilters = {};
+    
+    if (searchNickname.value.trim()) {
+        currentFilters.nickname = searchNickname.value.trim();
+    }
+    if (searchEmail.value.trim()) {
+        currentFilters.email = searchEmail.value.trim();
+    }
+    if (searchContentKeyword.value.trim()) {
+        currentFilters.content = searchContentKeyword.value.trim();
+    }
+    if (excludeDefaultNickname.checked) {
+        currentFilters.exclude_default_nickname = true;
+    }
+    if (excludeShortContent.checked) {
+        const minLen = parseInt(minContentLength.value) || 10;
+        currentFilters.min_content_length = minLen;
+    }
+    
+    loadCheckins(1);
+});
+
+// 排序按钮事件
+sortDescBtn.addEventListener('click', () => {
+    if (currentSort !== 'desc' || currentSortBy !== 'id') {
+        currentSort = 'desc';
+        currentSortBy = 'id';
+        updateSortButtons();
+        loadCheckins(1);
+    }
+});
+
+sortAscBtn.addEventListener('click', () => {
+    if (currentSort !== 'asc' || currentSortBy !== 'id') {
+        currentSort = 'asc';
+        currentSortBy = 'id';
+        updateSortButtons();
+        loadCheckins(1);
+    }
+});
+
+sortLoveBtn.addEventListener('click', () => {
+    if (currentSortBy !== 'love') {
+        currentSort = 'desc'; // 点赞数默认倒序（最多优先）
+        currentSortBy = 'love';
+        updateSortButtons();
+        loadCheckins(1);
+    }
+});
+
+// 更新排序按钮状态
+function updateSortButtons() {
+    sortDescBtn.classList.remove('active');
+    sortAscBtn.classList.remove('active');
+    sortLoveBtn.classList.remove('active');
+    
+    if (currentSortBy === 'love') {
+        sortLoveBtn.classList.add('active');
+    } else if (currentSort === 'desc') {
+        sortDescBtn.classList.add('active');
+    } else {
+        sortAscBtn.classList.add('active');
+    }
+}
 
 // 加载打卡记录
 async function loadCheckins(page = 1) {
     try {
-        const response = await fetch(`/api/checkins?page=${page}&limit=20`);
+        // 构建查询参数
+        const params = new URLSearchParams({
+            page: page,
+            limit: 20,
+            sort: currentSort,
+            sort_by: currentSortBy,
+            ...currentFilters
+        });
+        
+        const response = await fetch(`/api/checkins?${params}`);
         const result = await response.json();
 
         if (result.success) {
@@ -48,8 +163,26 @@ function renderCheckins(checkins) {
         const mediaFiles = checkin.media_files || [];
         const time = formatTime(checkin.created_at);
 
+        // 用户信息
+        const avatar = checkin.avatar || '🥰';
+        const nickname = checkin.nickname || '用户0721';
+        const email = checkin.email;
+        const qq = checkin.qq;
+        const url = checkin.url;
+        const love = checkin.love || 0;
+        const liked = checkin.liked || false;
+
+        // 联系方式HTML
+        const contactsHtml = (email || qq || url) ? `
+            <div class="card-contacts">
+                ${email ? `<span class="contact-item contact-email" title="点击复制邮箱" onclick="copyToClipboard('${escapeHtml(email)}', '邮箱')"><span class="contact-icon">📧</span><span class="contact-text">${escapeHtml(email)}</span></span>` : ''}
+                ${qq ? `<span class="contact-item contact-qq" title="点击复制QQ号" onclick="copyToClipboard('${escapeHtml(qq)}', 'QQ号')"><span class="contact-icon">🐧</span><span class="contact-text">${escapeHtml(qq)}</span></span>` : ''}
+                ${url ? `<a href="${escapeHtml(url)}" target="_blank" rel="noopener noreferrer" class="contact-item contact-url" title="点击访问链接"><span class="contact-icon">🔗</span><span class="contact-text">${escapeHtml(url).length > 30 ? escapeHtml(url).substring(0, 30) + '...' : escapeHtml(url)}</span></a>` : ''}
+            </div>
+        ` : '';
+
         const mediaHtml = mediaFiles.length > 0 ? `
-            <div class="checkin-media">
+            <div class="card-media">
                 ${mediaFiles.map(url => {
                     const isVideo = url.match(/\.(mp4|webm|mov|avi)$/i);
                     if (isVideo) {
@@ -69,17 +202,36 @@ function renderCheckins(checkins) {
             </div>
         ` : '';
 
+        // 点赞按钮HTML
+        const likeClass = liked ? 'like-btn liked' : 'like-btn';
+        const likeHtml = `
+            <button class="${likeClass}" data-id="${checkin.id}" onclick="handleLike(${checkin.id}, this)">
+                <span class="like-icon">${liked ? '❤️' : '🤍'}</span>
+                <span class="like-count">${love}</span>
+            </button>
+        `;
+
+        // 新布局：上下分区，上半区2:8布局
         return `
             <div class="checkin-card">
-                <div class="checkin-header">
-                    <span class="checkin-id">#${checkin.id}</span>
-                    <div class="checkin-time-group">
-                        <span class="checkin-time-relative">${time}</span>
-                        <span class="checkin-time-absolute">${formatAbsoluteTime(checkin.created_at)}</span>
+                <div class="card-upper">
+                    <div class="card-avatar">${avatar}</div>
+                    <div class="card-main">
+                        <div class="card-header">
+                            <span class="card-nickname">${escapeHtml(nickname)}</span>
+                            <span class="card-meta">
+                                <span class="card-id">#${checkin.id}</span>
+                                <span class="card-time" title="${formatAbsoluteTime(checkin.created_at)}">${time}</span>
+                            </span>
+                        </div>
+                        <div class="card-content">${content}</div>
+                        ${contactsHtml}
                     </div>
                 </div>
-                <div class="checkin-content">${content}</div>
                 ${mediaHtml}
+                <div class="card-footer">
+                    ${likeHtml}
+                </div>
             </div>
         `;
     }).join('');
@@ -233,5 +385,111 @@ imageModal.addEventListener('click', (e) => {
     }
 });
 
+// 复制到剪贴板
+function copyToClipboard(text, label) {
+    if (navigator.clipboard) {
+        navigator.clipboard.writeText(text).then(() => {
+            alert(`✅ ${label}已复制: ${text}`);
+        }).catch(err => {
+            console.error('复制失败:', err);
+            // 降级方案
+            fallbackCopy(text, label);
+        });
+    } else {
+        // 降级方案
+        fallbackCopy(text, label);
+    }
+}
+
+// 降级复制方案
+function fallbackCopy(text, label) {
+    const textarea = document.createElement('textarea');
+    textarea.value = text;
+    textarea.style.position = 'fixed';
+    textarea.style.opacity = '0';
+    document.body.appendChild(textarea);
+    textarea.select();
+    try {
+        document.execCommand('copy');
+        alert(`✅ ${label}已复制: ${text}`);
+    } catch (err) {
+        alert(`❌ 复制失败，请手动复制: ${text}`);
+    }
+    document.body.removeChild(textarea);
+}
+
 // 页面加载时获取数据
 loadCheckins(1);
+
+// 点赞处理函数
+async function handleLike(checkinId, button) {
+    // 防止重复点击
+    if (button.disabled) return;
+    button.disabled = true;
+    
+    // 检查本地是否已点赞（辅助检查，后端才是真正防线）
+    const likedIds = JSON.parse(localStorage.getItem('likedCheckins') || '[]');
+    if (likedIds.includes(checkinId)) {
+        showToast('你已经点过赞了 💕');
+        button.disabled = false;
+        return;
+    }
+    
+    try {
+        const response = await fetch(`/api/like/${checkinId}`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            }
+        });
+        
+        const result = await response.json();
+        
+        if (result.success) {
+            // 更新按钮状态
+            button.classList.add('liked');
+            button.querySelector('.like-icon').textContent = '❤️';
+            button.querySelector('.like-count').textContent = result.love;
+            
+            // 保存到 localStorage
+            likedIds.push(checkinId);
+            localStorage.setItem('likedCheckins', JSON.stringify(likedIds));
+            
+            // 添加动画效果
+            button.classList.add('like-animate');
+            setTimeout(() => button.classList.remove('like-animate'), 300);
+            
+            showToast('点赞成功 ❤️');
+        } else {
+            showToast(result.message || '点赞失败');
+        }
+    } catch (error) {
+        console.error('点赞失败:', error);
+        showToast('点赞失败，请重试');
+    } finally {
+        button.disabled = false;
+    }
+}
+
+// 显示提示信息
+function showToast(message) {
+    // 移除已有的 toast
+    const existingToast = document.querySelector('.toast');
+    if (existingToast) {
+        existingToast.remove();
+    }
+    
+    const toast = document.createElement('div');
+    toast.className = 'toast';
+    toast.textContent = message;
+    document.body.appendChild(toast);
+    
+    // 显示动画
+    setTimeout(() => toast.classList.add('show'), 10);
+    
+    // 3秒后隐藏
+    setTimeout(() => {
+        toast.classList.remove('show');
+        setTimeout(() => toast.remove(), 300);
+    }, 2000);
+}

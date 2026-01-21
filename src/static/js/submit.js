@@ -10,7 +10,60 @@ const submitBtn = document.getElementById('submitBtn');
 const resetBtn = document.getElementById('resetBtn');
 const messageDiv = document.getElementById('message');
 
+// 新增字段
+const avatarInput = document.getElementById('avatar');
+const avatarTrigger = document.getElementById('avatarTrigger');
+const emojiDropdown = document.getElementById('emojiDropdown');
+const emojiGrid = document.getElementById('emojiGrid');
+const nicknameInput = document.getElementById('nickname');
+const emailInput = document.getElementById('email');
+const qqInput = document.getElementById('qq');
+const urlInput = document.getElementById('url');
+
 let selectedFiles = [];
+
+// Telegram风格emoji选择器
+avatarTrigger.addEventListener('click', (e) => {
+    e.stopPropagation();
+    emojiDropdown.classList.toggle('show');
+});
+
+// 点击其他地方关闭dropdown
+document.addEventListener('click', (e) => {
+    if (!emojiDropdown.contains(e.target) && e.target !== avatarTrigger) {
+        emojiDropdown.classList.remove('show');
+    }
+});
+
+// Emoji选择
+emojiGrid.addEventListener('click', (e) => {
+    if (e.target.classList.contains('emoji-btn')) {
+        const emoji = e.target.dataset.emoji;
+        avatarInput.value = emoji;
+        avatarTrigger.textContent = emoji;
+        emojiDropdown.classList.remove('show');
+        
+        // 移除其他选中状态
+        document.querySelectorAll('.emoji-btn').forEach(btn => {
+            btn.classList.remove('selected');
+        });
+        e.target.classList.add('selected');
+    }
+});
+
+// 初始化：选中默认emoji
+document.addEventListener('DOMContentLoaded', () => {
+    const defaultEmoji = avatarInput.value;
+    const defaultBtn = document.querySelector(`[data-emoji="${defaultEmoji}"]`);
+    if (defaultBtn) {
+        defaultBtn.classList.add('selected');
+    }
+});
+
+// QQ号输入验证（只允许数字）
+qqInput.addEventListener('input', (e) => {
+    e.target.value = e.target.value.replace(/\D/g, '');
+});
 
 // 字符计数
 contentInput.addEventListener('input', () => {
@@ -124,9 +177,43 @@ form.addEventListener('submit', async (e) => {
         return;
     }
 
+    // 获取用户信息
+    const nickname = nicknameInput.value.trim() || '用户0721';
+    const email = emailInput.value.trim();
+    const qq = qqInput.value.trim();
+    const url = urlInput.value.trim();
+    const avatar = avatarInput.value.trim() || '🥰';
+
+    // 前端验证
+    if (email && !validateEmail(email)) {
+        showMessage('邮箱格式不正确', 'error');
+        return;
+    }
+
+    if (qq && (qq.length < 5 || qq.length > 11 || !/^\d+$/.test(qq))) {
+        showMessage('QQ号格式不正确（5-11位数字）', 'error');
+        return;
+    }
+
+    if (url && !validateURL(url)) {
+        showMessage('URL格式不正确（必须以 http:// 或 https:// 开头）', 'error');
+        return;
+    }
+
+    if (nickname.length > 20) {
+        showMessage('昵称长度不能超过20个字符', 'error');
+        return;
+    }
+
     // 创建 FormData
     const formData = new FormData();
     formData.append('content', content);
+    formData.append('nickname', nickname);
+    formData.append('avatar', avatar);
+    
+    if (email) formData.append('email', email);
+    if (qq) formData.append('qq', qq);
+    if (url) formData.append('url', url);
 
     // 添加文件
     selectedFiles.forEach(file => {
@@ -154,6 +241,17 @@ form.addEventListener('submit', async (e) => {
                 selectedFiles = [];
                 previewContainer.innerHTML = '';
                 charCount.textContent = '0';
+                avatarInput.value = '🥰';
+                avatarTrigger.textContent = '🥰';
+                nicknameInput.value = '';
+                
+                // 重新选中默认 emoji
+                document.querySelectorAll('.emoji-btn').forEach(btn => {
+                    btn.classList.remove('selected');
+                });
+                const defaultBtn = document.querySelector('[data-emoji="🥰"]');
+                if (defaultBtn) defaultBtn.classList.add('selected');
+                
                 hideMessage();
             }, 2000);
         } else {
@@ -167,6 +265,17 @@ form.addEventListener('submit', async (e) => {
         submitBtn.innerHTML = '<span class="btn-text">💦 记录这一发</span><span class="btn-icon">→</span>';
     }
 });
+
+// 邮箱验证
+function validateEmail(email) {
+    const re = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+    return re.test(email);
+}
+
+// URL验证
+function validateURL(url) {
+    return url.startsWith('http://') || url.startsWith('https://');
+}
 
 // 显示消息
 function showMessage(text, type = 'success') {

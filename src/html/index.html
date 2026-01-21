@@ -6,8 +6,26 @@
     <title>撸了吗 - 打卡提交</title>
     <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>😋</text></svg>">
     <link rel="stylesheet" href="/static/css/style.css">
+    <script>
+        // 立即设置主题，避免闪烁
+        (function() {
+            const theme = localStorage.getItem('theme') || 'light';
+            document.documentElement.setAttribute('data-theme', theme);
+        })();
+    </script>
 </head>
 <body>
+    <!-- 主题切换按钮 -->
+    <button class="theme-toggle" id="themeToggle" title="切换主题">
+        <span class="icon-sun">☀️</span>
+        <span class="icon-moon">🌙</span>
+    </button>
+    
+    <!-- GitHub链接 -->
+    <a href="https://github.com/Yueosa/lianlol" target="_blank" rel="noopener noreferrer" class="github-link" title="GitHub">
+        🐙
+    </a>
+
     <div class="container">
         <header>
             <h1>💦 撸了吗</h1>
@@ -21,6 +39,49 @@
 
         <main class="checkin-form">
             <form id="checkinForm">
+                <!-- 用户信息区域 -->
+                <div class="user-info-section">
+                    <div class="user-info-row">
+                        <!-- 头像选择器（Telegram风格） -->
+                        <div class="avatar-picker">
+                            <div class="avatar-trigger" id="avatarTrigger">🥰</div>
+                            <div class="emoji-dropdown" id="emojiDropdown">
+                                <div class="emoji-grid" id="emojiGrid">
+                                    <button type="button" class="emoji-btn" data-emoji="🥰">🥰</button>
+                                    <button type="button" class="emoji-btn" data-emoji="😍">😍</button>
+                                    <button type="button" class="emoji-btn" data-emoji="🥵">🥵</button>
+                                    <button type="button" class="emoji-btn" data-emoji="🥺">🥺</button>
+                                    <button type="button" class="emoji-btn" data-emoji="🤤">🤤</button>
+                                    <button type="button" class="emoji-btn" data-emoji="😻">😻</button>
+                                    <button type="button" class="emoji-btn" data-emoji="💦">💦</button>
+                                    <button type="button" class="emoji-btn" data-emoji="👅">👅</button>
+                                    <button type="button" class="emoji-btn" data-emoji="🍆">🍆</button>
+                                    <button type="button" class="emoji-btn" data-emoji="🍑">🍑</button>
+                                    <button type="button" class="emoji-btn" data-emoji="💋">💋</button>
+                                    <button type="button" class="emoji-btn" data-emoji="😈">😈</button>
+                                    <button type="button" class="emoji-btn" data-emoji="😏">😏</button>
+                                    <button type="button" class="emoji-btn" data-emoji="🔥">🔥</button>
+                                    <button type="button" class="emoji-btn" data-emoji="💕">💕</button>
+                                    <button type="button" class="emoji-btn" data-emoji="💓">💓</button>
+                                    <button type="button" class="emoji-btn" data-emoji="🫦">🫦</button>
+                                    <button type="button" class="emoji-btn" data-emoji="👄">👄</button>
+                                </div>
+                            </div>
+                            <input type="hidden" id="avatar" name="avatar" value="🥰">
+                        </div>
+                        <!-- 昵称输入 -->
+                        <div class="nickname-input">
+                            <input type="text" id="nickname" name="nickname" placeholder="昵称（默认：用户0721）" maxlength="20">
+                        </div>
+                    </div>
+                    <div class="user-info-row contacts-row">
+                        <input type="email" id="email" name="email" placeholder="📧 邮箱（可选）">
+                        <input type="tel" id="qq" name="qq" placeholder="💬 QQ（可选）" pattern="[0-9]*" maxlength="11">
+                        <input type="url" id="url" name="url" placeholder="🔗 主页（可选）">
+                    </div>
+                </div>
+
+                <!-- 内容区域 -->
                 <div class="form-group">
                     <label for="content">📝 这次用的什么</label>
                     <textarea 
@@ -73,6 +134,7 @@
         </footer>
     </div>
 
+    <script src="/static/js/theme.js"></script>
     <script src="/static/js/submit.js"></script>
 </body>
 </html>
