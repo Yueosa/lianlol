@@ -1,0 +1,64 @@
+/* ================================
+   CSS 变量定义（含暗色主题）
+   ================================ */
+:root {
+    /* 主色调 */
+    --pink: #ffb6c1;
+    --pink-light: #ffd9e0;
+    --pink-dark: #ff8fa3;
+    --blue: #87ceeb;
+    --blue-light: #b8e2f2;
+    --blue-dark: #5fb8d9;
+    
+    /* 基础色 */
+    --white: #ffffff;
+    --bg-color: #fef8fa;
+    --card-bg: #ffffff;
+    
+    /* 文字色 */
+    --text-primary: #5a4a6a;
+    --text-secondary: #8b7a9e;
+    
+    /* 边框和状态 */
+    --border-color: #f0e6f0;
+    --success-color: #7ed3b2;
+    --danger-color: #ff9b9b;
+    
+    /* 阴影 */
+    --shadow-soft: 0 2px 12px rgba(255, 182, 193, 0.2);
+    --shadow-hover: 0 4px 20px rgba(255, 182, 193, 0.3);
+    
+    /* 圆角 */
+    --radius: 8px;
+    --radius-lg: 12px;
+    
+    /* 页面背景 */
+    --body-bg: linear-gradient(135deg, #fff0f5 0%, #f0f8ff 50%, #fff5f8 100%);
+    --header-bg: linear-gradient(135deg, rgba(255, 182, 193, 0.15) 0%, rgba(135, 206, 235, 0.15) 100%);
+    --main-border: rgba(255, 182, 193, 0.2);
+}
+
+/* 暗色模式 */
+[data-theme="dark"] {
+    --pink: #e895a3;
+    --pink-light: #3d2d35;
+    --pink-dark: #ff8fa3;
+    --blue: #6ab0d4;
+    --blue-light: #2d3a42;
+    --blue-dark: #5fb8d9;
+    --white: #1e1e2e;
+    --bg-color: #252535;
+    --card-bg: #1e1e2e;
+    --text-primary: #e0d8e8;
+    --text-secondary: #a89bb8;
+    --border-color: #3a3a4a;
+    --success-color: #5eb892;
+    --danger-color: #e87b7b;
+    --shadow-soft: 0 2px 12px rgba(0, 0, 0, 0.3);
+    --shadow-hover: 0 4px 20px rgba(0, 0, 0, 0.4);
+    
+    /* 页面背景 */
+    --body-bg: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #1a1a2e 100%);
+    --header-bg: linear-gradient(135deg, rgba(232, 149, 163, 0.1) 0%, rgba(106, 176, 212, 0.1) 100%);
+    --main-border: rgba(232, 149, 163, 0.15);
+}

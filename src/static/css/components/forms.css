@@ -1,0 +1,78 @@
+/* ================================
+   表单组件
+   ================================ */
+.form-group {
+    margin-bottom: 15px;
+}
+
+.form-group label {
+    display: block;
+    margin-bottom: 8px;
+    font-weight: 600;
+    color: var(--text-primary);
+    font-size: 0.9rem;
+}
+
+textarea {
+    width: 100%;
+    padding: 12px;
+    border: 2px solid var(--border-color);
+    border-radius: 12px;
+    font-size: 14px;
+    font-family: inherit;
+    resize: vertical;
+    transition: all 0.3s ease;
+    background: var(--bg-color);
+}
+
+textarea:focus {
+    outline: none;
+    border-color: var(--pink);
+    background: var(--white);
+    box-shadow: 0 0 0 3px rgba(255, 182, 193, 0.15);
+}
+
+textarea::placeholder {
+    color: var(--text-secondary);
+    opacity: 0.7;
+}
+
+.char-count {
+    text-align: right;
+    color: var(--text-secondary);
+    font-size: 0.9rem;
+    margin-top: 8px;
+}
+
+/* 消息提示 */
+.message {
+    margin-top: 15px;
+    padding: 12px 18px;
+    border-radius: 12px;
+    display: none;
+    font-weight: 600;
+    font-size: 0.9rem;
+}
+
+.message.show {
+    display: block;
+    animation: bounce-in 0.4s ease;
+}
+
+@keyframes bounce-in {
+    0% { opacity: 0; transform: scale(0.9) translateY(-10px); }
+    50% { transform: scale(1.02); }
+    100% { opacity: 1; transform: scale(1) translateY(0); }
+}
+
+.message.success {
+    background: linear-gradient(135deg, rgba(126, 211, 178, 0.2) 0%, rgba(135, 206, 235, 0.2) 100%);
+    color: #3d8b6e;
+    border: 2px solid var(--success-color);
+}
+
+.message.error {
+    background: linear-gradient(135deg, rgba(255, 155, 155, 0.2) 0%, rgba(255, 182, 193, 0.2) 100%);
+    color: #c45c5c;
+    border: 2px solid var(--danger-color);
+}

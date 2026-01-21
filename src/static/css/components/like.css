@@ -1,0 +1,61 @@
+/* ================================
+   点赞按钮组件
+   ================================ */
+.like-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 6px 12px;
+    background: var(--bg-color);
+    border: 1px solid var(--border-color);
+    border-radius: 20px;
+    cursor: pointer;
+    font-size: 0.85rem;
+    transition: all 0.2s ease;
+    color: var(--text-secondary);
+}
+
+.like-btn:hover {
+    background: var(--pink-light);
+    border-color: var(--pink);
+    transform: translateY(-1px);
+}
+
+.like-btn.liked {
+    background: var(--pink-light);
+    border-color: var(--pink);
+    color: var(--pink-dark);
+}
+
+.like-btn.liked:hover {
+    background: var(--pink-light);
+    cursor: default;
+    transform: none;
+}
+
+.like-btn:disabled {
+    opacity: 0.7;
+    cursor: wait;
+}
+
+.like-icon {
+    font-size: 1rem;
+    line-height: 1;
+}
+
+.like-count {
+    font-weight: 600;
+    min-width: 1em;
+    text-align: center;
+}
+
+/* 点赞动画 */
+.like-btn.like-animate .like-icon {
+    animation: like-pop 0.3s ease;
+}
+
+@keyframes like-pop {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.4); }
+    100% { transform: scale(1); }
+}

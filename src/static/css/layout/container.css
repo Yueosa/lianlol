@@ -1,0 +1,26 @@
+/* ================================
+   容器布局
+   ================================ */
+.container {
+    max-width: 720px;
+    margin: 0 auto;
+    padding: 15px;
+}
+
+/* 主内容区域 */
+main {
+    background: var(--card-bg);
+    border-radius: 20px;
+    padding: 20px;
+    box-shadow: var(--shadow-soft);
+    margin: 12px 0;
+    border: 1px solid var(--main-border);
+    transition: background 0.3s ease, border-color 0.3s ease;
+}
+
+/* 响应式容器 */
+@media (max-width: 600px) {
+    .container {
+        padding: 10px;
+    }
+}

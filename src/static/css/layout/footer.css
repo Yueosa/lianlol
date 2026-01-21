@@ -1,0 +1,9 @@
+/* ================================
+   底部样式
+   ================================ */
+footer {
+    text-align: center;
+    padding: 20px;
+    color: var(--text-secondary);
+    font-size: 0.8rem;
+}

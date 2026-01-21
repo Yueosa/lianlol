@@ -1,0 +1,56 @@
+/* ================================
+   导航链接
+   ================================ */
+.nav-links {
+    display: flex;
+    justify-content: center;
+    gap: 10px;
+    margin: 15px 0;
+}
+
+.nav-links a {
+    padding: 8px 20px;
+    background: var(--card-bg);
+    color: var(--text-primary);
+    text-decoration: none;
+    border-radius: 20px;
+    transition: all 0.3s ease;
+    border: 1px solid var(--border-color);
+    font-weight: 500;
+    font-size: 0.85rem;
+}
+
+.nav-links a:hover {
+    background: var(--pink-light);
+    border-color: var(--pink);
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-soft);
+}
+
+.nav-links a.active {
+    background: linear-gradient(135deg, var(--pink) 0%, var(--blue) 100%);
+    color: var(--white);
+    border-color: transparent;
+}
+
+/* 响应式 */
+@media (max-width: 768px) {
+    .nav-links {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .nav-links a {
+        text-align: center;
+    }
+}
+
+@media (max-width: 600px) {
+    .nav-links {
+        gap: 8px;
+    }
+    
+    .nav-links a {
+        padding: 10px 20px;
+    }
+}

@@ -1,0 +1,40 @@
+/* ================================
+   分页组件
+   ================================ */
+.pagination {
+    display: flex;
+    justify-content: center;
+    gap: 6px;
+    margin-top: 20px;
+    flex-wrap: wrap;
+}
+
+.pagination button {
+    padding: 6px 14px;
+    border: 1px solid var(--border-color);
+    background: var(--white);
+    color: var(--text-primary);
+    border-radius: 15px;
+    cursor: pointer;
+    font-weight: 600;
+    font-size: 0.8rem;
+    transition: all 0.2s ease;
+    line-height: 1.2;
+}
+
+.pagination button:hover:not(:disabled) {
+    background: var(--pink-light);
+    border-color: var(--pink);
+    color: var(--text-primary);
+}
+
+.pagination button.active {
+    background: var(--pink);
+    color: var(--white);
+    border-color: var(--pink);
+}
+
+.pagination button:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+}

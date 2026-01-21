@@ -1,0 +1,213 @@
+/* ================================
+   打卡卡片组件
+   ================================ */
+.checkins-list {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.checkin-card {
+    background: var(--card-bg);
+    border-radius: var(--radius-lg);
+    padding: 12px;
+    box-shadow: var(--shadow-soft);
+    border: 1px solid var(--border-color);
+    transition: all 0.3s ease;
+}
+
+.checkin-card:hover {
+    box-shadow: var(--shadow-hover);
+    border-color: var(--pink);
+}
+
+/* 上半区：2:8布局 */
+.card-upper {
+    display: flex;
+    gap: 10px;
+}
+
+.card-avatar {
+    flex: 0 0 auto;
+    width: 36px;
+    height: 36px;
+    font-size: 1.4rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: linear-gradient(135deg, var(--pink-light) 0%, var(--blue-light) 100%);
+    border-radius: 50%;
+}
+
+.card-main {
+    flex: 1;
+    min-width: 0;
+}
+
+.card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 4px;
+}
+
+.card-nickname {
+    font-weight: 600;
+    font-size: 0.9rem;
+    color: var(--text-primary);
+}
+
+.card-meta {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 0.75rem;
+    color: var(--text-secondary);
+}
+
+.card-id {
+    font-weight: 600;
+    color: var(--pink-dark);
+}
+
+.card-time {
+    cursor: help;
+}
+
+.card-content {
+    font-size: 0.85rem;
+    line-height: 1.6;
+    white-space: pre-wrap;
+    word-break: break-word;
+    color: var(--text-primary);
+}
+
+.card-content a {
+    color: var(--blue-dark);
+    text-decoration: none;
+    border-bottom: 1px solid var(--blue-light);
+    transition: all 0.2s ease;
+}
+
+.card-content a:hover {
+    color: var(--pink-dark);
+    border-color: var(--pink);
+}
+
+/* 联系方式 */
+.card-contacts {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 8px;
+}
+
+.contact-item {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 4px 10px;
+    background: var(--bg-color);
+    border: 1px solid var(--border-color);
+    border-radius: 15px;
+    font-size: 0.75rem;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    text-decoration: none;
+    color: var(--text-primary);
+}
+
+.contact-item:hover {
+    background: var(--pink-light);
+    border-color: var(--pink);
+    transform: translateY(-1px);
+    box-shadow: 0 2px 6px rgba(255, 182, 193, 0.3);
+}
+
+.contact-icon {
+    font-size: 0.85rem;
+}
+
+.contact-text {
+    max-width: 180px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.contact-email:hover {
+    background: var(--pink-light);
+    border-color: var(--pink);
+}
+
+.contact-qq:hover {
+    background: var(--blue-light);
+    border-color: var(--blue);
+}
+
+.contact-url:hover {
+    background: linear-gradient(135deg, var(--pink-light) 0%, var(--blue-light) 100%);
+    border-color: var(--pink);
+}
+
+/* 下半区：媒体展示 */
+.card-media {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+    gap: 8px;
+    margin-top: 10px;
+    padding-top: 10px;
+    border-top: 1px dashed var(--border-color);
+}
+
+.media-item {
+    border-radius: var(--radius);
+    overflow: hidden;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    background: var(--bg-color);
+}
+
+.media-item:hover {
+    transform: scale(1.03);
+    box-shadow: var(--shadow-soft);
+}
+
+.media-item img {
+    width: 100%;
+    height: 100px;
+    object-fit: cover;
+    display: block;
+}
+
+.media-item video {
+    width: 100%;
+    min-height: 120px;
+    max-height: 200px;
+    object-fit: contain;
+    display: block;
+    background: #000;
+}
+
+/* 卡片底部 - 点赞区域 */
+.card-footer {
+    display: flex;
+    justify-content: flex-end;
+    align-items: center;
+    margin-top: 10px;
+    padding-top: 8px;
+    border-top: 1px dashed var(--border-color);
+}
+
+/* 响应式 */
+@media (max-width: 600px) {
+    .card-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 4px;
+    }
+    
+    .card-media {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
