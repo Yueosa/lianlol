@@ -1,0 +1,94 @@
+{% extends "base.html" %}
+
+{% block title %}打卡记录{% endblock %}
+
+{% block main_class %}display-content{% endblock %}
+
+{% block content %}
+<!-- 搜索筛选面板 -->
+<div class="search-panel" id="searchPanel">
+    <button class="search-toggle" id="searchToggle">
+        🔍 高级搜索 <span class="toggle-icon">▼</span>
+    </button>
+    
+    <div class="search-content" id="searchContent">
+        <div class="search-row">
+            <div class="search-field">
+                <label>👤 昵称</label>
+                <input type="text" id="searchNickname" placeholder="搜索昵称...">
+            </div>
+            <div class="search-field">
+                <label>📧 邮箱</label>
+                <input type="text" id="searchEmail" placeholder="搜索邮箱...">
+            </div>
+            <div class="search-field">
+                <label>📝 内容</label>
+                <input type="text" id="searchContentKeyword" placeholder="搜索内容...">
+            </div>
+        </div>
+
+        <div class="search-row">
+            <div class="search-options">
+                <label class="checkbox-label">
+                    <input type="checkbox" id="excludeDefaultNickname">
+                    <span>排除默认昵称用户</span>
+                </label>
+                <label class="checkbox-label">
+                    <input type="checkbox" id="excludeShortContent">
+                    <span>排除短内容</span>
+                </label>
+                <div class="length-input">
+                    <label>字数少于</label>
+                    <input type="number" id="minContentLength" value="10" min="0" max="1000">
+                </div>
+            </div>
+        </div>
+
+        <div class="search-actions">
+            <button type="button" class="btn btn-secondary" id="resetSearch">
+                🔄 重置
+            </button>
+            <button type="button" class="btn btn-primary" id="applySearch">
+                ✅ 应用筛选
+            </button>
+        </div>
+    </div>
+</div>
+
+<div class="stats">
+    <div class="stat-group">
+        <div class="stat-item">
+            <span class="stat-label">总计:</span>
+            <span class="stat-value" id="totalCount">0</span>
+        </div>
+        <div class="stat-item">
+            <span class="stat-label">页码:</span>
+            <span class="stat-value" id="currentPage">1</span>
+        </div>
+    </div>
+    <div class="sort-control">
+        <span class="sort-label">排序</span>
+        <button class="sort-btn active" id="sortDesc" title="最新优先">ID↓</button>
+        <button class="sort-btn" id="sortAsc" title="最早优先">ID↑</button>
+        <button class="sort-btn" id="sortLove" title="点赞最多">❤️</button>
+    </div>
+</div>
+
+<div class="checkins-list" id="checkinsList">
+    <div class="loading">加载中...</div>
+</div>
+
+<div class="pagination" id="pagination"></div>
+{% endblock %}
+
+{% block modals %}
+<div class="modal" id="imageModal">
+    <span class="modal-close">&times;</span>
+    <img class="modal-content" id="modalImage">
+    <div class="modal-caption" id="modalCaption"></div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script type="module" src="/static/js/pages/display/main.js"></script>
+{% endblock %}

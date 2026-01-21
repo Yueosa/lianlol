@@ -1,0 +1,101 @@
+{% extends "base.html" %}
+
+{% block title %}打卡提交{% endblock %}
+
+{% block main_class %}checkin-form{% endblock %}
+
+{% block content %}
+<form id="checkinForm">
+    <!-- 用户信息区域 -->
+    <div class="user-info-section">
+        <div class="user-info-row">
+            <!-- 头像选择器（Telegram风格） -->
+            <div class="avatar-picker">
+                <div class="avatar-trigger" id="avatarTrigger">🥰</div>
+                <div class="emoji-dropdown" id="emojiDropdown">
+                    <div class="emoji-grid" id="emojiGrid">
+                        <button type="button" class="emoji-btn" data-emoji="🥰">🥰</button>
+                        <button type="button" class="emoji-btn" data-emoji="😍">😍</button>
+                        <button type="button" class="emoji-btn" data-emoji="🥵">🥵</button>
+                        <button type="button" class="emoji-btn" data-emoji="🥺">🥺</button>
+                        <button type="button" class="emoji-btn" data-emoji="🤤">🤤</button>
+                        <button type="button" class="emoji-btn" data-emoji="😻">😻</button>
+                        <button type="button" class="emoji-btn" data-emoji="💦">💦</button>
+                        <button type="button" class="emoji-btn" data-emoji="👅">👅</button>
+                        <button type="button" class="emoji-btn" data-emoji="🍆">🍆</button>
+                        <button type="button" class="emoji-btn" data-emoji="🍑">🍑</button>
+                        <button type="button" class="emoji-btn" data-emoji="💋">💋</button>
+                        <button type="button" class="emoji-btn" data-emoji="😈">😈</button>
+                        <button type="button" class="emoji-btn" data-emoji="😏">😏</button>
+                        <button type="button" class="emoji-btn" data-emoji="🔥">🔥</button>
+                        <button type="button" class="emoji-btn" data-emoji="💕">💕</button>
+                        <button type="button" class="emoji-btn" data-emoji="💓">💓</button>
+                        <button type="button" class="emoji-btn" data-emoji="🫦">🫦</button>
+                        <button type="button" class="emoji-btn" data-emoji="👄">👄</button>
+                    </div>
+                </div>
+                <input type="hidden" id="avatar" name="avatar" value="🥰">
+            </div>
+            <!-- 昵称输入 -->
+            <div class="nickname-input">
+                <input type="text" id="nickname" name="nickname" placeholder="昵称（默认：用户0721）" maxlength="20">
+            </div>
+        </div>
+        <div class="user-info-row contacts-row">
+            <input type="email" id="email" name="email" placeholder="📧 邮箱（可选）">
+            <input type="tel" id="qq" name="qq" placeholder="💬 QQ（可选）" pattern="[0-9]*" maxlength="11">
+            <input type="url" id="url" name="url" placeholder="🔗 主页（可选）">
+        </div>
+    </div>
+
+    <!-- 内容区域 -->
+    <div class="form-group">
+        <label for="content">📝 这次用的什么</label>
+        <textarea 
+            id="content" 
+            name="content" 
+            rows="6" 
+            placeholder="记录一下吧... 本子链接、感想、用的什么素材..."
+            required
+        ></textarea>
+        <div class="char-count">
+            <span id="charCount">0</span> 字
+        </div>
+    </div>
+
+    <div class="form-group">
+        <label>🖼️ 上传图片/视频 (最大 20MB)</label>
+        <div class="upload-area" id="uploadArea">
+            <div class="upload-icon">📁</div>
+            <p>点击或拖拽文件到这里</p>
+            <p class="upload-hint">支持: JPG, PNG, GIF, MP4, WEBM</p>
+            <input 
+                type="file" 
+                id="fileInput" 
+                name="files" 
+                multiple 
+                accept="image/*,video/*"
+                hidden
+            >
+        </div>
+    </div>
+
+    <div class="preview-container" id="previewContainer"></div>
+
+    <div class="form-actions">
+        <button type="button" class="btn btn-secondary" id="resetBtn">
+            🔄 清空
+        </button>
+        <button type="submit" class="btn btn-primary btn-submit" id="submitBtn">
+            <span class="btn-text">💦 记录这一发</span>
+            <span class="btn-icon">→</span>
+        </button>
+    </div>
+</form>
+
+<div class="message" id="message"></div>
+{% endblock %}
+
+{% block scripts %}
+<script type="module" src="/static/js/pages/index/main.js"></script>
+{% endblock %}
