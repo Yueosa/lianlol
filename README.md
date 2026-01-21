@@ -1,8 +1,30 @@
+<div align="center">
+
 # 撸了吗 (lol) 🔞
 
 一个基于 FastAPI + SQLite 的打卡系统，支持文本和多媒体（图片/视频）内容的提交与展示。
 
+</div>
+
+## 📸 界面预览
+
+<div align="center">
+
+### 亮色模式
+
+<img src="img/1.png" alt="亮色模式 - 提交页面" width="45%"> <img src="img/3.png" alt="亮色模式 - 展示页面" width="45%">
+
+### 暗色模式
+
+<img src="img/2.png" alt="暗色模式 - 提交页面" width="45%"> <img src="img/4.png" alt="暗色模式 - 展示页面" width="45%">
+
+</div>
+
+<div align="center">
+
 ## ✨ 功能特性
+
+</div>
 
 - 📝 文本打卡提交
 - 🖼️ 多媒体文件上传（图片、视频，最大 20MB）
@@ -16,12 +38,20 @@
 - 🛠️ 数据库运维管理工具
 - 🌱 测试数据生成工具
 
+<div align="center">
+
 ## 🛠️ 技术栈
+
+</div>
 
 - **后端**: Python FastAPI + Jinja2 模板 + SQLite3
 - **前端**: HTML5 + CSS3 (模块化) + ES Modules
 
+<div align="center">
+
 ## 📦 安装
+
+</div>
 
 推荐使用 `uv` 包管理器：
 
@@ -29,7 +59,11 @@
 uv sync
 ```
 
+<div align="center">
+
 ## 🚀 运行
+
+</div>
 
 ```bash
 uv run main.py
@@ -37,14 +71,22 @@ uv run main.py
 
 应用将在 http://localhost:8722 启动
 
+<div align="center">
+
 ## 🌐 页面访问
+
+</div>
 
 | 页面     | 地址                          |
 | -------- | ----------------------------- |
 | 打卡提交 | http://localhost:8722/        |
 | 打卡展示 | http://localhost:8722/display |
 
+<div align="center">
+
 ## 📡 API 接口
+
+</div>
 
 | 方法   | 路径             | 说明         |
 | ------ | ---------------- | ------------ |
@@ -56,7 +98,11 @@ uv run main.py
 
 ---
 
+<div align="center">
+
 ## 🔧 数据库工具
+
+</div>
 
 ### 📋 运维管理工具 (`scripts/db_admin.py`)
 
@@ -168,7 +214,12 @@ uv run scripts/db_seed.py -n 200 --days 14 --contact-rate 0.8 --clear-first
 
 ---
 
+<div align="center">
+
 ## 📁 项目结构
+
+</div>
+
 
 ```
 lol/
@@ -255,7 +306,11 @@ lol/
         └── uploads/           # 上传文件目录（自动创建）
 ```
 
+<div align="center">
+
 ## 📝 数据库版本
+
+</div>
 
 | 版本 | 特性                             |
 | ---- | -------------------------------- |
@@ -265,6 +320,10 @@ lol/
 
 数据库会自动迁移，无需手动操作。
 
+<div align="center">
+
 ## 📜 License
+
+</div>
 
 MIT
