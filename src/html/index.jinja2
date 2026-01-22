@@ -6,6 +6,14 @@
 
 {% block content %}
 <form id="checkinForm">
+    <!-- 蜜罐字段：正常用户看不到，机器人会填写 -->
+    <div style="position: absolute; left: -9999px; opacity: 0; height: 0; overflow: hidden;">
+        <label for="website">Website (请勿填写)</label>
+        <input type="text" id="website" name="website" tabindex="-1" autocomplete="off">
+    </div>
+    <!-- 表单加载时间戳 -->
+    <input type="hidden" id="form_token" name="form_token" value="">
+    
     <!-- 用户信息区域 -->
     <div class="user-info-section">
         <div class="user-info-row">

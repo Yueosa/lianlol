@@ -28,7 +28,10 @@ const elements = {
     nicknameInput: document.getElementById('nickname'),
     emailInput: document.getElementById('email'),
     qqInput: document.getElementById('qq'),
-    urlInput: document.getElementById('url')
+    urlInput: document.getElementById('url'),
+    
+    // 安全字段
+    formToken: document.getElementById('form_token')
 };
 
 // 消息显示
@@ -43,6 +46,11 @@ function hideMessage() {
 
 // 初始化各模块
 document.addEventListener('DOMContentLoaded', () => {
+    // 设置表单加载时间戳（用于检测机器人）
+    if (elements.formToken) {
+        elements.formToken.value = (Date.now() / 1000).toFixed(0);
+    }
+    
     // 头像选择器
     initAvatarPicker(
         elements.avatarTrigger,

@@ -18,7 +18,14 @@ from utils.validators import (
     validate_qq,
     validate_nickname,
     validate_emoji,
-    validate_content
+    validate_content,
+    validate_all_fields,
+    sanitize_html
+)
+from utils.security import (
+    security_check,
+    is_blocked_country,
+    add_to_blacklist
 )
 
 
@@ -106,9 +113,44 @@ async def create_checkin_record(
     email: Optional[str] = Form(default=None),
     qq: Optional[str] = Form(default=None),
     url: Optional[str] = Form(default=None),
-    avatar: str = Form(default="🥰")
+    avatar: str = Form(default="🥰"),
+    # 蜜罐字段（正常用户看不到，不会填写）
+    website: Optional[str] = Form(default=None),  # honeypot
+    form_token: Optional[str] = Form(default=None)  # 表单时间戳
 ):
     """创建打卡记录"""
+    # 获取客户端IP
+    client_ip = request.client.host if request.client else None
+    
+    # === 安全检查 ===
+    is_allowed, status_code, error_msg = security_check(
+        ip=client_ip or "unknown",
+        action="write",
+        content=content,
+        honeypot_value=website,  # 蜜罐字段
+        form_timestamp=form_token
+    )
+    
+    if not is_allowed:
+        return JSONResponse(
+            status_code=status_code,
+            content={"success": False, "message": error_msg}
+        )
+    
+    # === 综合字段安全验证 ===
+    is_valid, error_msg = validate_all_fields(
+        content=content,
+        nickname=nickname,
+        email=email,
+        qq=qq,
+        url=url
+    )
+    if not is_valid:
+        return JSONResponse(
+            status_code=400,
+            content={"success": False, "message": error_msg}
+        )
+    
     # 验证内容
     is_valid, error_msg = validate_content(content)
     if not is_valid:
@@ -157,9 +199,6 @@ async def create_checkin_record(
             content={"success": False, "message": error_msg}
         )
     
-    # 获取客户端IP
-    client_ip = request.client.host if request.client else None
-    
     # 处理上传的文件
     media_files = []
     for file in files:
@@ -176,12 +215,13 @@ async def create_checkin_record(
     # 将媒体文件列表转为JSON字符串列表（仅保存URL）
     media_urls = [f["url"] for f in media_files]
     
-    # 处理空值
-    nickname = nickname.strip() if nickname and nickname.strip() else "用户0721"
+    # 处理空值（并进行 HTML 转义防止 XSS）
+    nickname = sanitize_html(nickname.strip()) if nickname and nickname.strip() else "用户0721"
     email = email.strip() if email and email.strip() else None
     qq = qq.strip() if qq and qq.strip() else None
     url = url.strip() if url and url.strip() else None
     avatar = avatar.strip() if avatar and avatar.strip() else "🥰"
+    content = sanitize_html(content.strip())  # 内容也转义
     
     # 创建打卡记录
     checkin_id = create_checkin(
@@ -229,6 +269,21 @@ async def get_checkin_list(
         exclude_default_nickname: 排除默认昵称用户
         min_content_length: 最小内容长度
     """
+    # 获取客户端 IP
+    client_ip = request.client.host if request.client else None
+    
+    # 安全检查（读取操作）
+    is_allowed, status_code, error_msg = security_check(
+        ip=client_ip or "unknown",
+        action="read"
+    )
+    
+    if not is_allowed:
+        return JSONResponse(
+            status_code=status_code,
+            content={"success": False, "message": error_msg}
+        )
+    
     checkins, total = get_checkins(
         page=page,
         limit=limit,

@@ -9,5 +9,6 @@ dependencies = [
     "uvicorn[standard]>=0.27.0",
     "aiofiles>=23.2.1",
     "python-multipart>=0.0.6",
-    "jinja2>=3.1.0"
+    "jinja2>=3.1.0",
+    "geoip2>=5.2.0",
 ]
