@@ -285,7 +285,55 @@ def validate_nickname(nickname: Optional[str]) -> Tuple[bool, str]:
         if char in nickname:
             return False, f"昵称不能包含特殊字符: {char}"
     
+    # 检测垃圾昵称模式
+    is_spam, msg = check_spam_nickname(nickname)
+    if is_spam:
+        return False, msg
+    
     return True, ""
+
+
+# ============ 垃圾昵称检测 ============
+
+# 垃圾昵称模式（正则表达式）
+SPAM_NICKNAME_PATTERNS = [
+    r'爱国青年\d*',
+    r'文明使者\d*',
+    r'法治宣传员\d*',
+    r'新时代青年\d*',
+    r'网络安全守护者\d*',
+    r'价值观践行者\d*',
+    r'诚信公民\d*',
+    r'正能量传播者\d*',
+    r'友善网友\d*',
+    r'守法公民\d*',
+    r'网络文明志愿者\d*',
+    r'社会主义.*践行者\d*',
+    r'中国好网民\d*',
+    r'核心价值观.*\d*',
+    r'网络卫士\d*',
+    r'普法.*\d*',
+]
+
+
+def check_spam_nickname(nickname: str) -> Tuple[bool, str]:
+    """
+    检测是否为垃圾昵称
+    
+    Args:
+        nickname: 昵称
+    
+    Returns:
+        (是否是垃圾, 错误信息)
+    """
+    if not nickname:
+        return False, ""
+    
+    for pattern in SPAM_NICKNAME_PATTERNS:
+        if re.search(pattern, nickname):
+            return True, "昵称不可用"
+    
+    return False, ""
 
 
 def validate_emoji(emoji: Optional[str]) -> Tuple[bool, str]:
