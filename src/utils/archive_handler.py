@@ -202,7 +202,7 @@ class ArchiveHandler:
             return None
     
     def get_thumbnails(self, image_list: List[str], max_count: int = 50) -> List[Dict]:
-        """批量生成图片缩略图
+        """批量生成图片缩略图（优化版：只打开一次压缩包）
         
         Args:
             image_list: 图片路径列表
@@ -212,14 +212,81 @@ class ArchiveHandler:
             包含路径和缩略图的字典列表
         """
         result = []
-        for img_path in image_list[:max_count]:
-            thumbnail = self.get_image_thumbnail(img_path)
-            result.append({
-                "path": img_path,
-                "name": Path(img_path).name,
-                "thumbnail": thumbnail
-            })
+        images_to_process = image_list[:max_count]
+        
+        try:
+            if self.archive_type == 'zip':
+                # ZIP: 打开一次，批量读取
+                with zipfile.ZipFile(self.archive_path, 'r') as zf:
+                    for img_path in images_to_process:
+                        try:
+                            data = zf.read(img_path)
+                            thumbnail = self._generate_thumbnail(data)
+                            result.append({
+                                "path": img_path,
+                                "name": Path(img_path).name,
+                                "thumbnail": thumbnail
+                            })
+                        except Exception as e:
+                            result.append({
+                                "path": img_path,
+                                "name": Path(img_path).name,
+                                "thumbnail": None
+                            })
+            else:
+                # 7z: 批量提取到临时目录
+                with tempfile.TemporaryDirectory() as temp_dir:
+                    temp_path = Path(temp_dir)
+                    with py7zr.SevenZipFile(self.archive_path, 'r') as szf:
+                        szf.extract(temp_path, targets=images_to_process)
+                    
+                    for img_path in images_to_process:
+                        try:
+                            extracted = temp_path / img_path
+                            if extracted.exists():
+                                data = extracted.read_bytes()
+                                thumbnail = self._generate_thumbnail(data)
+                            else:
+                                thumbnail = None
+                            result.append({
+                                "path": img_path,
+                                "name": Path(img_path).name,
+                                "thumbnail": thumbnail
+                            })
+                        except Exception:
+                            result.append({
+                                "path": img_path,
+                                "name": Path(img_path).name,
+                                "thumbnail": None
+                            })
+        except Exception as e:
+            print(f"批量生成缩略图失败: {str(e)}")
+        
         return result
+    
+    def _generate_thumbnail(self, data: bytes, max_size: int = 200) -> Optional[str]:
+        """从图片数据生成缩略图
+        
+        Args:
+            data: 图片二进制数据
+            max_size: 缩略图最大尺寸
+            
+        Returns:
+            Base64 编码的缩略图
+        """
+        try:
+            img = Image.open(io.BytesIO(data))
+            img.thumbnail((max_size, max_size), Image.Resampling.LANCZOS)
+            
+            buffer = io.BytesIO()
+            if img.mode in ('RGBA', 'LA', 'P'):
+                img = img.convert('RGB')
+            img.save(buffer, format='JPEG', quality=75)  # 降低质量加速
+            b64_data = base64.b64encode(buffer.getvalue()).decode('utf-8')
+            
+            return f"data:image/jpeg;base64,{b64_data}"
+        except Exception:
+            return None
     
     def get_full_image(self, file_path: str, max_size: int = 800) -> Optional[str]:
         """从压缩包中提取图片并生成较大的 Base64 预览图

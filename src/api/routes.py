@@ -70,7 +70,7 @@ def is_allowed_file(filename: str) -> bool:
 
 @router.post("/archive/fullimage")
 async def get_archive_full_image(file: UploadFile = File(...), path: str = Form(...)):
-    """获取压缩包中某张图片的大图预览"""
+    """获取压缩包中某张图片的大图预览（上传模式，用于提交页面预览）"""
     # 验证文件类型
     ext = Path(file.filename).suffix.lower()
     if ext not in ALLOWED_EXTENSIONS["archive"]:
@@ -106,6 +106,61 @@ async def get_archive_full_image(file: UploadFile = File(...), path: str = Form(
         )
     finally:
         tmp_path.unlink(missing_ok=True)
+
+
+@router.post("/archive/fullimage-saved")
+async def get_saved_archive_full_image(
+    archive_url: str = Form(...),
+    path: str = Form(...)
+):
+    """获取已保存压缩包中某张图片的大图预览（用于展示页面）
+    
+    Args:
+        archive_url: 压缩包的 URL 路径（如 /static/uploads/2026-01/archives/xxx.zip）
+        path: 压缩包内的图片路径
+    """
+    # 从 URL 构建本地文件路径
+    if not archive_url.startswith('/static/uploads/'):
+        return JSONResponse(
+            status_code=400,
+            content={"success": False, "message": "无效的压缩包路径"}
+        )
+    
+    # 构建绝对路径
+    relative_path = archive_url.replace('/static/', '')
+    archive_path = Path(__file__).parent.parent / "static" / relative_path.lstrip('/')
+    
+    # 验证文件存在
+    if not archive_path.exists():
+        return JSONResponse(
+            status_code=404,
+            content={"success": False, "message": "压缩包不存在"}
+        )
+    
+    # 验证文件类型
+    ext = archive_path.suffix.lower()
+    if ext not in ALLOWED_EXTENSIONS["archive"]:
+        return JSONResponse(
+            status_code=400,
+            content={"success": False, "message": "只支持 ZIP 和 7Z 格式"}
+        )
+    
+    try:
+        handler = ArchiveHandler(archive_path)
+        full_image = handler.get_full_image(path)
+        
+        if full_image:
+            return {"success": True, "image": full_image}
+        else:
+            return JSONResponse(
+                status_code=400,
+                content={"success": False, "message": "无法获取图片"}
+            )
+    except Exception as e:
+        return JSONResponse(
+            status_code=400,
+            content={"success": False, "message": f"获取图片失败: {str(e)}"}
+        )
 
 
 @router.post("/archive/preview")
@@ -151,8 +206,8 @@ async def preview_archive(file: UploadFile = File(...)):
         image_list = handler.list_images()
         metadata = handler.get_metadata()
         
-        # 生成缩略图（最多50张）
-        images_with_thumbnails = handler.get_thumbnails(image_list, max_count=50)
+        # 生成缩略图（最多100张）
+        images_with_thumbnails = handler.get_thumbnails(image_list, max_count=100)
         
         return {
             "success": True,
