@@ -26,7 +26,8 @@ def create_tables():
             file_type TEXT DEFAULT 'media',
             archive_metadata TEXT DEFAULT NULL,
             approved INTEGER DEFAULT 1,
-            reviewed_at DATETIME DEFAULT NULL
+            reviewed_at DATETIME DEFAULT NULL,
+            review_reason TEXT DEFAULT NULL
         )
     """)
     

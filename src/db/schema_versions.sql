@@ -101,7 +101,8 @@ CREATE TABLE IF NOT EXISTS check_ins (
 -- 变更内容:
 --   - 新增 approved 字段，审核状态（1=通过, 0=待审），默认值 1
 --   - 新增 reviewed_at 字段，审核时间，可为 NULL
---   - 新增智能检测：字数过短/过长、黑名单关键词、无媒体文件
+--   - 新增 review_reason 字段，触发审核的原因，可为 NULL
+--   - 新增智能检测：字数过短/过长、垃圾关键词、XSS/SQL注入模式
 --   - 新增 /admin 管理后台，支持待审列表、通过、拒绝、批量操作
 --   - 管理后台使用 ADMIN_KEY 环境变量进行鉴权
 -- ===================================
@@ -125,7 +126,8 @@ CREATE TABLE IF NOT EXISTS check_ins (
     archive_metadata TEXT DEFAULT NULL,
     -- VERSION 5.0 新增字段
     approved INTEGER DEFAULT 1,
-    reviewed_at DATETIME DEFAULT NULL
+    reviewed_at DATETIME DEFAULT NULL,
+    review_reason TEXT DEFAULT NULL
 );
 
 -- 点赞记录表（防止重复点赞）
@@ -164,5 +166,6 @@ CREATE INDEX IF NOT EXISTS idx_likes_checkin_ip ON likes(checkin_id, ip_address)
 -- 从 V4.0 迁移到 V5.0:
 -- ALTER TABLE check_ins ADD COLUMN approved INTEGER DEFAULT 1;
 -- ALTER TABLE check_ins ADD COLUMN reviewed_at DATETIME DEFAULT NULL;
+-- ALTER TABLE check_ins ADD COLUMN review_reason TEXT DEFAULT NULL;
 -- UPDATE check_ins SET approved = 1 WHERE approved IS NULL;
 -- ===================================

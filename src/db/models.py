@@ -26,6 +26,7 @@ class CheckIn:
     # VERSION 5.0 新增字段
     approved: bool = True  # 审核状态：True=通过, False=待审
     reviewed_at: Optional[datetime] = None  # 审核时间
+    review_reason: Optional[str] = None  # 触发审核的原因
     # 动态计算的显示编号（不存储在数据库）
     display_number: Optional[int] = None
     
@@ -47,5 +48,6 @@ class CheckIn:
             "file_type": self.file_type,
             "archive_metadata": self.archive_metadata,
             "approved": self.approved,
-            "reviewed_at": self.reviewed_at.isoformat() if self.reviewed_at else None
+            "reviewed_at": self.reviewed_at.isoformat() if self.reviewed_at else None,
+            "review_reason": self.review_reason
         }

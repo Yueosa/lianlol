@@ -42,7 +42,7 @@ function renderItem(item) {
             <div class="item-actions">
                 <button class="action-btn approve" data-action="approve" data-id="${item.id}">✓ 通过</button>
                 <button class="action-btn reject" data-action="reject" data-id="${item.id}">✗ 拒绝</button>
-                <button class="action-btn ban" data-action="ban" data-id="${item.id}" data-fp="${item.fingerprint || ''}">🚫 加黑名单</button>
+                <button class="action-btn ban" data-action="ban" data-id="${item.id}">🚫 加黑名单</button>
             </div>
         `
         : `
@@ -111,8 +111,7 @@ function bindItemEvents(container, onUpdate) {
                     await reject(id);
                     showToast('✗ 已拒绝', 'success');
                 } else if (action === 'ban') {
-                    const fp = btn.dataset.fp;
-                    await ban(id, fp);
+                    await ban(id);
                     showToast('🚫 已拒绝并加入黑名单', 'success');
                 }
                 onUpdate();

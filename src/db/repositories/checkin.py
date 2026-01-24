@@ -18,7 +18,8 @@ def create(
     avatar: str = "🥰",
     file_type: str = "media",
     archive_metadata: Optional[str] = None,
-    approved: bool = True
+    approved: bool = True,
+    review_reason: Optional[str] = None
 ) -> int:
     """创建打卡记录
     
@@ -34,10 +35,10 @@ def create(
         cursor.execute("""
             INSERT INTO check_ins (
                 content, media_files, created_at, ip_address,
-                nickname, email, qq, url, avatar, file_type, archive_metadata, approved
+                nickname, email, qq, url, avatar, file_type, archive_metadata, approved, review_reason
             )
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-        """, (content, media_json, created_at, ip_address, nickname, email, qq, url, avatar, file_type, archive_metadata, approved_int))
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        """, (content, media_json, created_at, ip_address, nickname, email, qq, url, avatar, file_type, archive_metadata, approved_int, review_reason))
         
         return cursor.lastrowid
 
@@ -124,7 +125,7 @@ def get_list(
                 SELECT 
                     id, content, media_files, created_at, ip_address,
                     nickname, email, qq, url, avatar, love, file_type, archive_metadata,
-                    approved, reviewed_at,
+                    approved, reviewed_at, review_reason,
                     ROW_NUMBER() OVER (ORDER BY created_at ASC) as display_number
                 FROM check_ins
                 {approved_filter}
@@ -147,7 +148,7 @@ def get_by_id(checkin_id: int) -> Optional[CheckIn]:
         cursor.execute("""
             SELECT id, content, media_files, created_at, ip_address,
                    nickname, email, qq, url, avatar, love, file_type, archive_metadata,
-                   approved, reviewed_at
+                   approved, reviewed_at, review_reason
             FROM check_ins
             WHERE id = ?
         """, (checkin_id,))
@@ -175,7 +176,7 @@ def get_pending_list(page: int = 1, limit: int = 20) -> Tuple[List[CheckIn], int
         cursor.execute("""
             SELECT id, content, media_files, created_at, ip_address,
                    nickname, email, qq, url, avatar, love, file_type, archive_metadata,
-                   approved, reviewed_at
+                   approved, reviewed_at, review_reason
             FROM check_ins
             WHERE approved = 0
             ORDER BY created_at DESC
@@ -282,6 +283,11 @@ def _row_to_checkin(row) -> CheckIn:
     except (KeyError, IndexError):
         reviewed_at = None
     
+    try:
+        review_reason = row["review_reason"]
+    except (KeyError, IndexError):
+        review_reason = None
+    
     return CheckIn(
         id=row["id"],
         content=row["content"],
@@ -298,5 +304,6 @@ def _row_to_checkin(row) -> CheckIn:
         archive_metadata=archive_metadata,
         approved=approved,
         reviewed_at=reviewed_at,
+        review_reason=review_reason,
         display_number=display_number
     )

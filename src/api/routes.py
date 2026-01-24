@@ -447,7 +447,8 @@ async def create_checkin_record(
         avatar=avatar,
         file_type=file_type_flag,
         archive_metadata=json.dumps(archive_metadata_dict) if archive_metadata_dict else None,
-        approved=auto_approved
+        approved=auto_approved,
+        review_reason=review_reason if not auto_approved else None
     )
     
     # 根据审核结果返回不同的消息

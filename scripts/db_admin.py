@@ -581,8 +581,8 @@ def cmd_ban(args):
     conn = get_connection(args.db)
     cursor = conn.cursor()
     
-    # 获取记录和指纹
-    cursor.execute("SELECT id, nickname, content, fingerprint FROM check_ins WHERE id = ?", (args.id,))
+    # 获取记录和 IP 地址
+    cursor.execute("SELECT id, nickname, content, ip_address FROM check_ins WHERE id = ?", (args.id,))
     row = cursor.fetchone()
     
     if not row:
@@ -590,9 +590,9 @@ def cmd_ban(args):
         conn.close()
         return
     
-    fingerprint = row[3]
-    if not fingerprint:
-        print(color("警告: 该记录没有指纹信息，无法加入黑名单", Colors.YELLOW))
+    ip_address = row[3]
+    if not ip_address:
+        print(color("警告: 该记录没有 IP 地址信息，无法加入黑名单", Colors.YELLOW))
         # 仍然删除记录
         if not args.force:
             confirm = input(f"是否仍要删除 ID={args.id} 的记录? (y/N): ")
@@ -609,10 +609,10 @@ def cmd_ban(args):
     # 显示记录摘要
     content_preview = row[2][:50] + "..." if row[2] and len(row[2]) > 50 else row[2]
     print(f"\n记录摘要: ID={row[0]}, 昵称={row[1]}, 内容={content_preview}")
-    print(f"指纹: {fingerprint}")
+    print(f"IP 地址: {ip_address}")
     
     if not args.force:
-        confirm = input(f"确定要拒绝并将此用户加入黑名单吗? (y/N): ")
+        confirm = input(f"确定要拒绝并将此 IP 加入黑名单吗? (y/N): ")
         if confirm.lower() != 'y':
             print("已取消")
             conn.close()
@@ -622,8 +622,8 @@ def cmd_ban(args):
     blacklist_path = PROJECT_ROOT / "src" / "data" / "blacklist.txt"
     try:
         with open(blacklist_path, 'a') as f:
-            f.write(f"{fingerprint}\n")
-        print(color(f"🚫 已将指纹 {fingerprint} 加入黑名单", Colors.YELLOW))
+            f.write(f"{ip_address}\n")
+        print(color(f"🚫 已将 IP {ip_address} 加入黑名单", Colors.YELLOW))
     except Exception as e:
         print(color(f"警告: 无法写入黑名单文件: {e}", Colors.YELLOW))
     

@@ -76,11 +76,9 @@ export async function reject(id) {
 }
 
 // 拒绝并加入黑名单
-export async function ban(id, fingerprint) {
+export async function ban(id) {
     return apiRequest(`/ban/${id}`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ fingerprint })
+        method: 'POST'
     });
 }
 

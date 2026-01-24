@@ -113,16 +113,33 @@ async def ban_checkin(
     checkin_id: int,
     authorized: bool = Depends(require_admin_key)
 ):
-    """封禁已发布内容"""
+    """封禁并加入黑名单（基于 IP）"""
     # 检查记录是否存在
     checkin = checkin_repo.get_by_id(checkin_id)
     if not checkin:
         raise HTTPException(status_code=404, detail="记录不存在")
     
-    success = checkin_repo.ban(checkin_id)
+    ip_address = checkin.ip_address
+    banned_ip = False
+    
+    # 如果有 IP 地址，加入黑名单
+    if ip_address:
+        blacklist_path = Path(__file__).parent.parent / "data" / "blacklist.txt"
+        try:
+            with open(blacklist_path, 'a') as f:
+                f.write(f"{ip_address}\n")
+            banned_ip = True
+        except Exception:
+            pass  # 写入失败不影响删除操作
+    
+    # 删除记录
+    success = checkin_repo.reject(checkin_id)
     
     if success:
-        return {"success": True, "message": f"已封禁 #{checkin_id}"}
+        msg = f"已封禁并删除 #{checkin_id}"
+        if banned_ip:
+            msg += f"，IP {ip_address} 已加入黑名单"
+        return {"success": True, "message": msg}
     else:
         raise HTTPException(status_code=500, detail="操作失败")
 
