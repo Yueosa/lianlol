@@ -283,15 +283,171 @@ function removeArchiveFromUploadArea() {
     uploadAreaElement.innerHTML = uploadAreaOriginalHTML;
 }
 
+// 图片扩展名
+const IMAGE_EXTENSIONS = ['.jpg', '.jpeg', '.png', '.gif', '.webp', '.bmp'];
+
 /**
- * 新的压缩包解析函数（用于 upload-area 显示）
+ * 客户端解压 ZIP 并生成预览（无需上传）
  * @param {File} file 
  * @param {Function} onError
  */
 async function preUploadArchiveNew(file, onError) {
     const statusArea = uploadAreaElement.querySelector('.archive-status-area');
     const actionsArea = uploadAreaElement.querySelector('.archive-actions');
+    const ext = file.name.substring(file.name.lastIndexOf('.')).toLowerCase();
     
+    // 7z 格式回退到服务器处理（浏览器不支持）
+    if (ext === '.7z') {
+        statusArea.innerHTML = `<div class="archive-loading">⏳ 解析 7z 文件中（需上传到服务器）...</div>`;
+        return preUploadArchiveServer(file, onError, statusArea, actionsArea);
+    }
+    
+    // ZIP 格式：客户端解压
+    statusArea.innerHTML = `<div class="archive-loading">⏳ 解析中...</div>`;
+    
+    try {
+        const zip = await JSZip.loadAsync(file);
+        
+        // 列出所有图片文件
+        const imageFiles = [];
+        let totalFiles = 0;
+        
+        zip.forEach((relativePath, zipEntry) => {
+            if (!zipEntry.dir) {
+                totalFiles++;
+                const extLower = relativePath.substring(relativePath.lastIndexOf('.')).toLowerCase();
+                if (IMAGE_EXTENSIONS.includes(extLower)) {
+                    imageFiles.push(relativePath);
+                }
+            }
+        });
+        
+        // 排序（按文件名）
+        imageFiles.sort();
+        
+        // 生成缩略图（最多50张，并行处理加速）
+        const maxThumbnails = 50;
+        const imagesToProcess = imageFiles.slice(0, maxThumbnails);
+        
+        statusArea.innerHTML = `<div class="archive-loading">⏳ 生成预览图 0/${imagesToProcess.length}...</div>`;
+        
+        // 并行生成缩略图（每批10张）
+        const batchSize = 10;
+        const results = [];
+        
+        for (let i = 0; i < imagesToProcess.length; i += batchSize) {
+            const batch = imagesToProcess.slice(i, i + batchSize);
+            const batchResults = await Promise.all(
+                batch.map(async (path) => {
+                    try {
+                        const blob = await zip.file(path).async('blob');
+                        const thumbnail = await generateThumbnailClient(blob);
+                        return { path, name: path.split('/').pop(), thumbnail };
+                    } catch (e) {
+                        return { path, name: path.split('/').pop(), thumbnail: null };
+                    }
+                })
+            );
+            results.push(...batchResults);
+            statusArea.innerHTML = `<div class="archive-loading">⏳ 生成预览图 ${results.length}/${imagesToProcess.length}...</div>`;
+        }
+        
+        archiveImageList = results;
+        
+        // 更新状态区域
+        statusArea.innerHTML = `
+            <div class="archive-stats">
+                <span class="stat-item">📷 ${imageFiles.length} 张图片</span>
+                <span class="stat-item">📁 ${totalFiles} 个文件</span>
+            </div>
+        `;
+        
+        if (imageFiles.length > 0) {
+            actionsArea.style.display = 'flex';
+            actionsArea.querySelector('.btn-select-preview').addEventListener('click', (e) => {
+                e.stopPropagation();
+                showPreviewSelector(archiveImageList);
+            });
+        }
+        
+    } catch (error) {
+        console.warn('客户端解压失败，回退到服务器处理:', error.message);
+        statusArea.innerHTML = `<div class="archive-loading">⏳ 本地解析失败，使用服务器解析...</div>`;
+        // 回退到服务器方案
+        return preUploadArchiveServer(file, onError, statusArea, actionsArea);
+    }
+}
+
+/**
+ * 在客户端生成缩略图
+ * @param {Blob} blob - 图片 Blob
+ * @param {number} maxSize - 最大尺寸
+ * @returns {Promise<string>} - Base64 Data URI
+ */
+async function generateThumbnailClient(blob, maxSize = 150) {
+    return new Promise((resolve, reject) => {
+        const img = new Image();
+        const url = URL.createObjectURL(blob);
+        
+        // 设置超时，防止图片加载卡住
+        const timeout = setTimeout(() => {
+            URL.revokeObjectURL(url);
+            reject(new Error('图片加载超时'));
+        }, 10000);
+        
+        img.onload = () => {
+            clearTimeout(timeout);
+            URL.revokeObjectURL(url);
+            
+            try {
+                // 计算缩放尺寸
+                let width = img.width;
+                let height = img.height;
+                
+                if (width > maxSize || height > maxSize) {
+                    if (width > height) {
+                        height = Math.round(height * maxSize / width);
+                        width = maxSize;
+                    } else {
+                        width = Math.round(width * maxSize / height);
+                        height = maxSize;
+                    }
+                }
+                
+                // 绘制到 Canvas（不会产生文件，仅内存操作）
+                const canvas = document.createElement('canvas');
+                canvas.width = width;
+                canvas.height = height;
+                const ctx = canvas.getContext('2d');
+                ctx.drawImage(img, 0, 0, width, height);
+                
+                // 导出为 JPEG Data URL（内存中，无文件残留）
+                const dataUrl = canvas.toDataURL('image/jpeg', 0.7);
+                
+                // 清理 canvas 引用
+                canvas.width = 0;
+                canvas.height = 0;
+                
+                resolve(dataUrl);
+            } catch (e) {
+                reject(e);
+            }
+        };
+        
+        img.onerror = () => {
+            clearTimeout(timeout);
+            URL.revokeObjectURL(url);
+            reject(new Error('图片加载失败'));
+        };
+        
+        img.src = url;
+    });
+}
+
+/**
+ * 7z 格式回退到服务器处理
+ */
+async function preUploadArchiveServer(file, onError, statusArea, actionsArea) {
     try {
         const formData = new FormData();
         formData.append('file', file);
@@ -308,7 +464,6 @@ async function preUploadArchiveNew(file, onError) {
             const imageCount = result.archive_info.image_count || 0;
             const totalFiles = result.archive_info.total_files || 0;
             
-            // 更新状态区域
             statusArea.innerHTML = `
                 <div class="archive-stats">
                     <span class="stat-item">📷 ${imageCount} 张图片</span>
@@ -325,18 +480,16 @@ async function preUploadArchiveNew(file, onError) {
             }
         } else {
             statusArea.innerHTML = `<div class="archive-error">⚠️ ${result.message || '解析失败'}</div>`;
-            if (!result.success) {
-                onError(result.message || '压缩包解析失败');
-            }
+            onError(result.message || '压缩包解析失败');
         }
     } catch (error) {
-        console.error('预上传压缩包失败:', error);
+        console.error('服务器解析失败:', error);
         statusArea.innerHTML = `<div class="archive-error">⚠️ 解析失败</div>`;
     }
 }
 
 /**
- * 显示大图预览
+ * 显示大图预览（客户端版本）
  * @param {string} imagePath - 压缩包内的图片路径
  */
 async function showFullImage(imagePath) {
@@ -348,6 +501,8 @@ async function showFullImage(imagePath) {
     });
     
     if (!archiveFile) return;
+    
+    const ext = archiveFile.name.substring(archiveFile.name.lastIndexOf('.')).toLowerCase();
     
     // 创建加载提示
     const loadingModal = document.createElement('div');
@@ -363,42 +518,96 @@ async function showFullImage(imagePath) {
     document.body.appendChild(loadingModal);
     
     try {
-        const formData = new FormData();
-        formData.append('file', archiveFile);
-        formData.append('path', imagePath);
+        let imageDataUrl;
         
-        const response = await fetch('/api/archive/fullimage', {
-            method: 'POST',
-            body: formData
+        // ZIP 格式：优先客户端直接解压
+        if (ext === '.zip') {
+            try {
+                const zip = await JSZip.loadAsync(archiveFile);
+                const zipFile = zip.file(imagePath);
+                
+                if (zipFile) {
+                    const blob = await zipFile.async('blob');
+                    imageDataUrl = await blobToDataUrl(blob);
+                } else {
+                    throw new Error('文件不存在');
+                }
+            } catch (clientError) {
+                // 客户端解压失败，回退到服务器
+                console.warn('客户端提取图片失败，回退到服务器:', clientError.message);
+                imageDataUrl = await fetchFullImageFromServer(archiveFile, imagePath);
+            }
+        } else {
+            // 7z 格式：服务器处理
+            imageDataUrl = await fetchFullImageFromServer(archiveFile, imagePath);
+        }
+        
+        loadingModal.innerHTML = `
+            <div class="fullimage-content">
+                <button type="button" class="fullimage-close">×</button>
+                <img src="${imageDataUrl}" alt="${getFileName(imagePath)}">
+                <div class="fullimage-name">${getFileName(imagePath)}</div>
+            </div>
+        `;
+        
+        loadingModal.querySelector('.fullimage-close').addEventListener('click', () => {
+            loadingModal.remove();
         });
         
-        const result = await response.json();
-        
-        if (result.success && result.image) {
-            loadingModal.innerHTML = `
-                <div class="fullimage-content">
-                    <button type="button" class="fullimage-close">×</button>
-                    <img src="${result.image}" alt="${getFileName(imagePath)}">
-                    <div class="fullimage-name">${getFileName(imagePath)}</div>
-                </div>
-            `;
-            
-            loadingModal.querySelector('.fullimage-close').addEventListener('click', () => {
+        loadingModal.addEventListener('click', (e) => {
+            if (e.target === loadingModal) {
                 loadingModal.remove();
-            });
-            
-            loadingModal.addEventListener('click', (e) => {
-                if (e.target === loadingModal) {
-                    loadingModal.remove();
-                }
-            });
-        } else {
-            loadingModal.remove();
-            console.error('获取大图失败:', result.message);
-        }
+            }
+        });
+        
     } catch (error) {
         console.error('获取大图出错:', error);
-        loadingModal.remove();
+        loadingModal.innerHTML = `
+            <div class="fullimage-content">
+                <button type="button" class="fullimage-close">×</button>
+                <div class="fullimage-error">加载失败: ${error.message}</div>
+            </div>
+        `;
+        loadingModal.querySelector('.fullimage-close').addEventListener('click', () => {
+            loadingModal.remove();
+        });
+    }
+}
+
+/**
+ * Blob 转 DataURL（内存操作，无文件残留）
+ */
+function blobToDataUrl(blob) {
+    return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(reader.result);
+        reader.onerror = () => reject(new Error('读取失败'));
+        reader.readAsDataURL(blob);
+    });
+}
+
+/**
+ * 从服务器获取压缩包内的完整图片
+ * @param {File} archiveFile - 压缩包文件
+ * @param {string} imagePath - 压缩包内的图片路径
+ * @returns {Promise<string>} - 图片 Data URL
+ */
+async function fetchFullImageFromServer(archiveFile, imagePath) {
+    const formData = new FormData();
+    formData.append('file', archiveFile);
+    formData.append('path', imagePath);
+    
+    const response = await fetch('/api/archive/fullimage', {
+        method: 'POST',
+        body: formData
+    });
+    
+    const result = await response.json();
+    
+    if (result.success && result.image) {
+        return result.image;
+    } else {
+        throw new Error(result.message || '服务器获取图片失败');
     }
 }
 
