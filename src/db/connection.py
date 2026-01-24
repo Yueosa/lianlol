@@ -8,7 +8,7 @@ from typing import Generator
 DB_PATH = Path(__file__).parent / "lol.db"
 
 # 当前数据库版本
-DB_VERSION = "3.0"
+DB_VERSION = "5.0"
 
 
 def get_connection() -> sqlite3.Connection:

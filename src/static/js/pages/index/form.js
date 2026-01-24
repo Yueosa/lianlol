@@ -137,7 +137,13 @@ async function handleSubmit(elements, showMessage, hideMessage) {
 
         if (result.success) {
             const mediaMsg = result.media_count > 0 ? `已上传 ${result.media_count} 个文件` : '';
-            showMessage(`✅ 记录成功！${mediaMsg}`, 'success');
+            
+            // 根据是否需要审核显示不同消息
+            if (result.pending_review) {
+                showMessage(`⏳ 提交成功！内容需要审核后才会显示 ${mediaMsg}`, 'success');
+            } else {
+                showMessage(`✅ 记录成功！${mediaMsg}`, 'success');
+            }
             
             // 重置表单
             setTimeout(() => {

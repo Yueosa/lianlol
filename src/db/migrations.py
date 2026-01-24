@@ -99,6 +99,33 @@ def migrate_v3_to_v4(cursor: sqlite3.Cursor, conn: sqlite3.Connection):
     print("数据库迁移完成：V3.0 -> V4.0")
 
 
+def migrate_v4_to_v5(cursor: sqlite3.Cursor, conn: sqlite3.Connection):
+    """V4.0 -> V5.0: 添加内容审核功能"""
+    if _check_column_exists(cursor, "check_ins", "approved"):
+        # 检查是否需要添加 review_reason 字段
+        if not _check_column_exists(cursor, "check_ins", "review_reason"):
+            print("补充迁移：添加 review_reason 字段")
+            cursor.execute("ALTER TABLE check_ins ADD COLUMN review_reason TEXT DEFAULT NULL")
+            conn.commit()
+        return
+    
+    print("开始数据库迁移：V4.0 -> V5.0")
+    
+    # 添加 approved 字段（默认为 1 表示已通过，新记录根据检测结果设置）
+    cursor.execute("ALTER TABLE check_ins ADD COLUMN approved INTEGER DEFAULT 1")
+    # 现有数据全部设为已通过
+    cursor.execute("UPDATE check_ins SET approved = 1 WHERE approved IS NULL")
+    
+    # 添加 reviewed_at 字段
+    cursor.execute("ALTER TABLE check_ins ADD COLUMN reviewed_at DATETIME DEFAULT NULL")
+    
+    # 添加 review_reason 字段（记录触发审核的原因）
+    cursor.execute("ALTER TABLE check_ins ADD COLUMN review_reason TEXT DEFAULT NULL")
+    
+    conn.commit()
+    print("数据库迁移完成：V4.0 -> V5.0")
+
+
 def run_migrations():
     """执行所有数据库迁移"""
     conn = sqlite3.connect(DB_PATH)
@@ -108,6 +135,7 @@ def run_migrations():
         migrate_v1_to_v2(cursor, conn)
         migrate_v2_to_v3(cursor, conn)
         migrate_v3_to_v4(cursor, conn)
+        migrate_v4_to_v5(cursor, conn)
         ensure_likes_table(cursor, conn)
     finally:
         conn.close()

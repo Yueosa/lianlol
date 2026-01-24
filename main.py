@@ -1,5 +1,7 @@
 """撸了吗 - 打卡系统主程序"""
+import os
 from pathlib import Path
+from dotenv import load_dotenv
 from fastapi import FastAPI, Request
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
@@ -7,7 +9,11 @@ from fastapi.responses import JSONResponse, HTMLResponse
 from starlette.middleware.base import BaseHTTPMiddleware
 import uvicorn
 
+# 加载环境变量
+load_dotenv()
+
 from src.api.routes import router as api_router
+from src.api.admin import router as admin_router
 from src.utils.security import is_blocked_country
 
 
@@ -105,6 +111,7 @@ templates = Jinja2Templates(directory=templates_dir)
 
 # 挂载 API 路由
 app.include_router(api_router)
+app.include_router(admin_router)
 
 
 @app.get("/")
@@ -125,12 +132,28 @@ async def display(request: Request):
     )
 
 
+@app.get("/admin")
+async def admin_page(request: Request):
+    """管理后台页面"""
+    return templates.TemplateResponse(
+        "admin.jinja2",
+        {"request": request, "active_page": "admin"}
+    )
+
+
 def main():
     """启动应用"""
+    admin_key = os.getenv("ADMIN_KEY", "")
+    
     print("🚀 启动撸了吗打卡系统...")
     print("📍 访问地址: http://localhost:8722")
     print("📝 打卡提交: http://localhost:8722/")
     print("📊 打卡展示: http://localhost:8722/display")
+    print("⚙️ 管理面板: http://localhost:8722/admin")
+    if admin_key:
+        print(f"🔑 管理密钥: {admin_key}")
+    else:
+        print("⚠️  未设置 ADMIN_KEY，请在 .env 文件中配置")
     print("=" * 50)
     
     uvicorn.run(

@@ -220,7 +220,7 @@ function renderCheckins(checkins) {
                         <div class="card-header">
                             <span class="card-nickname">${escapeHtml(nickname)}</span>
                             <span class="card-meta">
-                                <span class="card-id">#${checkin.id}</span>
+                                <span class="card-id">#${checkin.display_number || checkin.id}</span>
                                 <span class="card-time" title="${formatAbsoluteTime(checkin.created_at)}">${time}</span>
                             </span>
                         </div>

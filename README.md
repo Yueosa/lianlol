@@ -27,7 +27,8 @@
 </div>
 
 - 📝 文本打卡提交
-- 🖼️ 多媒体文件上传（图片、视频，最大 20MB）
+- 🖼️ 多媒体文件上传（图片、视频，最大 50MB）
+- 📦 压缩包上传支持（ZIP、7Z，自动解压预览）
 - 📊 打卡记录展示与分页
 - 🔗 URL 自动识别并渲染为链接
 - 👤 用户信息（昵称、头像、邮箱、QQ、链接）
@@ -35,8 +36,11 @@
 - 🔍 高级搜索/筛选功能
 - 🌙 明暗主题切换
 - 📱 响应式设计
+- 🛡️ 内容审核系统（智能检测 + 管理后台）
+- 🔐 管理面板（密钥认证）
 - 🛠️ 数据库运维管理工具
 - 🌱 测试数据生成工具
+- 🧹 孤儿文件清理工具
 
 <div align="center">
 
@@ -73,6 +77,23 @@ uv run main.py
 
 <div align="center">
 
+## ⚙️ 环境配置
+
+</div>
+
+复制 `.env.example` 为 `.env` 并配置：
+
+```bash
+cp .env.example .env
+```
+
+```env
+# 管理后台密钥（必填，用于 /admin 页面登录）
+ADMIN_KEY=your-secret-key-here
+```
+
+<div align="center">
+
 ## 🌐 页面访问
 
 </div>
@@ -81,6 +102,7 @@ uv run main.py
 | -------- | ----------------------------- |
 | 打卡提交 | http://localhost:8722/        |
 | 打卡展示 | http://localhost:8722/display |
+| 管理后台 | http://localhost:8722/admin   |
 
 <div align="center">
 
@@ -88,13 +110,19 @@ uv run main.py
 
 </div>
 
-| 方法   | 路径             | 说明         |
-| ------ | ---------------- | ------------ |
-| `POST` | `/api/checkin`   | 提交打卡     |
-| `GET`  | `/api/checkins`  | 获取打卡列表 |
-| `POST` | `/api/upload`    | 上传文件     |
-| `POST` | `/api/like/{id}` | 点赞         |
-| `GET`  | `/static/*`      | 访问静态文件 |
+| 方法   | 路径                      | 说明         |
+| ------ | ------------------------- | ------------ |
+| `POST` | `/api/checkin`            | 提交打卡     |
+| `GET`  | `/api/checkins`           | 获取打卡列表 |
+| `POST` | `/api/upload`             | 上传文件     |
+| `POST` | `/api/like/{id}`          | 点赞         |
+| `GET`  | `/api/admin/stats`        | 审核统计 🔐   |
+| `GET`  | `/api/admin/pending`      | 待审核列表 🔐 |
+| `POST` | `/api/admin/approve/{id}` | 通过审核 🔐   |
+| `POST` | `/api/admin/reject/{id}`  | 拒绝审核 🔐   |
+| `GET`  | `/static/*`               | 访问静态文件 |
+
+> 🔐 标记的接口需要在请求头中携带 `X-Admin-Key`
 
 ---
 
@@ -170,6 +198,45 @@ uv run scripts/db_admin.py export --format csv -o data.csv
 uv run scripts/db_admin.py import backup.json
 ```
 
+#### 🛡️ 审核管理
+
+```bash
+# 查看待审核记录
+uv run scripts/db_admin.py pending
+uv run scripts/db_admin.py pending --page 2 --size 20
+
+# 审核统计
+uv run scripts/db_admin.py review-stats
+
+# 通过审核
+uv run scripts/db_admin.py approve 5
+uv run scripts/db_admin.py approve 5 -f    # 跳过确认
+
+# 拒绝并删除
+uv run scripts/db_admin.py reject 5
+uv run scripts/db_admin.py reject 5 -f
+
+# 拒绝并加入黑名单
+uv run scripts/db_admin.py ban 5
+
+# 批量通过
+uv run scripts/db_admin.py batch-approve 1,2,3,4,5
+```
+
+#### 🧹 文件清理
+
+```bash
+# 查看孤儿文件统计（uploads 中没有数据库引用的文件）
+uv run scripts/db_admin.py orphan-files
+
+# 列出所有孤儿文件
+uv run scripts/db_admin.py orphan-files --list
+
+# 删除孤儿文件
+uv run scripts/db_admin.py orphan-files --delete
+uv run scripts/db_admin.py orphan-files --delete -f  # 跳过确认
+```
+
 #### ⚙️ 数据库维护
 
 ```bash
@@ -189,7 +256,7 @@ uv run scripts/db_admin.py clear --confirm
 
 ### 🌱 测试数据生成工具 (`scripts/db_seed.py`)
 
-用于快速生成大量测试数据，方便测试筛选/搜索功能。
+用于快速生成大量测试数据，方便测试筛选/搜索/审核功能。
 
 ```bash
 # 基础用法：插入 50 条随机数据
@@ -205,11 +272,14 @@ uv run scripts/db_seed.py --count 100 --days 7
 # 指定联系方式生成概率（0-1，默认 0.3）
 uv run scripts/db_seed.py --count 50 --contact-rate 0.5
 
+# 指定待审核内容生成概率（0-1，默认 0.2）
+uv run scripts/db_seed.py --count 50 --pending-rate 0.3
+
 # 清空后重新生成
 uv run scripts/db_seed.py --count 100 --clear-first
 
-# 组合使用
-uv run scripts/db_seed.py -n 200 --days 14 --contact-rate 0.8 --clear-first
+# 组合使用（生成 200 条，30% 待审核）
+uv run scripts/db_seed.py -n 200 --days 14 --pending-rate 0.3 --clear-first
 ```
 
 ---
@@ -312,11 +382,13 @@ lol/
 
 </div>
 
-| 版本 | 特性                             |
-| ---- | -------------------------------- |
-| V1.0 | 基础打卡（内容、媒体、时间）     |
-| V2.0 | 用户信息（昵称、头像、联系方式） |
-| V3.0 | 点赞功能（love 字段 + likes 表） |
+| 版本 | 特性                                             |
+| ---- | ------------------------------------------------ |
+| V1.0 | 基础打卡（内容、媒体、时间）                     |
+| V2.0 | 用户信息（昵称、头像、联系方式）                 |
+| V3.0 | 点赞功能（love 字段 + likes 表）                 |
+| V4.0 | 压缩包支持（file_type、archive_metadata）        |
+| V5.0 | 内容审核（approved、reviewed_at、review_reason） |
 
 数据库会自动迁移，无需手动操作。
 

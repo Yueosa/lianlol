@@ -20,7 +20,8 @@ from utils.validators import (
     validate_emoji,
     validate_content,
     validate_all_fields,
-    sanitize_html
+    sanitize_html,
+    auto_review_content
 )
 from utils.security import (
     security_check,
@@ -426,6 +427,14 @@ async def create_checkin_record(
     avatar = avatar.strip() if avatar and avatar.strip() else "🥰"
     content = sanitize_html(content.strip())  # 内容也转义
     
+    # === 自动审核检测 ===
+    has_media = len(media_files) > 0
+    auto_approved, review_reason = auto_review_content(
+        content=content,
+        has_media=has_media,
+        nickname=nickname
+    )
+    
     # 创建打卡记录
     checkin_id = create_checkin(
         content=content,
@@ -437,15 +446,26 @@ async def create_checkin_record(
         url=url,
         avatar=avatar,
         file_type=file_type_flag,
-        archive_metadata=json.dumps(archive_metadata_dict) if archive_metadata_dict else None
+        archive_metadata=json.dumps(archive_metadata_dict) if archive_metadata_dict else None,
+        approved=auto_approved
     )
     
-    return {
-        "success": True,
-        "message": "打卡成功",
-        "id": checkin_id,
-        "media_count": archive_file_count if file_type_flag == "archive" else len(media_files)
-    }
+    # 根据审核结果返回不同的消息
+    if auto_approved:
+        return {
+            "success": True,
+            "message": "打卡成功",
+            "id": checkin_id,
+            "media_count": archive_file_count if file_type_flag == "archive" else len(media_files)
+        }
+    else:
+        return {
+            "success": True,
+            "message": "提交成功，内容需要审核后才会显示",
+            "id": checkin_id,
+            "media_count": archive_file_count if file_type_flag == "archive" else len(media_files),
+            "pending_review": True
+        }
 
 
 @router.get("/checkins")

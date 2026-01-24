@@ -11,3 +11,6 @@ wheels/
 
 uploads/
 lol.db
+
+# Environment variables
+.env

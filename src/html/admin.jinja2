@@ -1,0 +1,77 @@
+{% extends "base.html" %}
+
+{% block title %}管理后台{% endblock %}
+
+{% block main_class %}admin-page{% endblock %}
+
+{% block content %}
+<div class="admin-container">
+    <!-- 登录区域 -->
+    <div id="loginSection" class="admin-login">
+        <div class="login-card">
+            <h2>🔐 管理后台</h2>
+            <p>请输入管理密钥</p>
+            <div class="login-form">
+                <input type="password" id="adminKeyInput" placeholder="管理密钥">
+                <button type="button" id="loginBtn" class="btn btn-primary">登录</button>
+            </div>
+            <div id="loginError" class="login-error"></div>
+        </div>
+    </div>
+
+    <!-- 管理面板 -->
+    <div id="adminPanel" class="admin-panel" style="display: none;">
+        <!-- 统计卡片 -->
+        <div class="stats-row">
+            <div class="stat-card">
+                <div class="stat-icon">📝</div>
+                <div class="stat-info">
+                    <div class="stat-value" id="statTotal">-</div>
+                    <div class="stat-label">总记录数</div>
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon">✅</div>
+                <div class="stat-info">
+                    <div class="stat-value" id="statApproved">-</div>
+                    <div class="stat-label">已通过</div>
+                </div>
+            </div>
+            <div class="stat-card pending">
+                <div class="stat-icon">⏳</div>
+                <div class="stat-info">
+                    <div class="stat-value" id="statPending">-</div>
+                    <div class="stat-label">待审核</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 操作栏 -->
+        <div class="admin-toolbar">
+            <div class="filter-tabs">
+                <button class="tab-btn active" data-status="pending">待审核</button>
+                <button class="tab-btn" data-status="approved">已通过</button>
+                <button class="tab-btn" data-status="all">全部</button>
+            </div>
+            <div class="batch-actions">
+                <button id="selectAllBtn" class="btn btn-secondary btn-sm">全选</button>
+                <button id="batchApproveBtn" class="btn btn-success btn-sm" disabled>批量通过</button>
+                <button id="batchRejectBtn" class="btn btn-danger btn-sm" disabled>批量拒绝</button>
+            </div>
+        </div>
+
+        <!-- 列表区域 -->
+        <div class="admin-list" id="adminList">
+            <div class="loading">加载中...</div>
+        </div>
+
+        <!-- 分页 -->
+        <div class="admin-pagination" id="adminPagination"></div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<link rel="stylesheet" href="/static/css/pages/admin.css">
+<script type="module" src="/static/js/pages/admin/main.js"></script>
+{% endblock %}

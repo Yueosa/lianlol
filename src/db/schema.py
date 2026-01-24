@@ -5,7 +5,7 @@ from .migrations import run_migrations
 
 
 def create_tables():
-    """创建数据库表（V3.0 完整架构）"""
+    """创建数据库表（V5.0 完整架构）"""
     conn = sqlite3.connect(DB_PATH)
     cursor = conn.cursor()
     
@@ -24,7 +24,9 @@ def create_tables():
             avatar TEXT DEFAULT '🥰',
             love INTEGER DEFAULT 0,
             file_type TEXT DEFAULT 'media',
-            archive_metadata TEXT DEFAULT NULL
+            archive_metadata TEXT DEFAULT NULL,
+            approved INTEGER DEFAULT 1,
+            reviewed_at DATETIME DEFAULT NULL
         )
     """)
     

@@ -167,6 +167,87 @@ def check_spam_content(text: str) -> Tuple[bool, str]:
     return True, ""
 
 
+# ============ 内容自动审核检测 ============
+
+# 审核规则配置
+REVIEW_CONFIG = {
+    "min_content_length": 10,    # 最小内容长度
+    "max_content_length": 200,  # 最大内容长度
+    "require_media": True,       # 是否必须有媒体文件
+}
+
+
+def auto_review_content(
+    content: str,
+    has_media: bool = False,
+    nickname: str = "用户0721"
+) -> Tuple[bool, str]:
+    """
+    自动审核内容，返回是否需要人工审核
+    
+    Args:
+        content: 内容文本
+        has_media: 是否有媒体文件
+        nickname: 用户昵称
+    
+    Returns:
+        (是否自动通过, 原因说明)
+        - True: 内容正常，自动通过
+        - False: 内容可疑，需要人工审核
+    """
+    reasons = []
+    
+    # 1. 检查内容长度
+    content_length = len(content.strip())
+    
+    if content_length < REVIEW_CONFIG["min_content_length"]:
+        reasons.append(f"内容过短（{content_length}字符）")
+    
+    if content_length > REVIEW_CONFIG["max_content_length"]:
+        reasons.append(f"内容过长（{content_length}字符）")
+    
+    # 2. 检查垃圾关键词
+    is_clean, _ = check_spam_content(content)
+    if not is_clean:
+        reasons.append("包含敏感关键词")
+    
+    # 3. 检查 XSS 模式
+    is_safe, _ = check_xss_patterns(content)
+    if not is_safe:
+        reasons.append("包含可疑代码")
+    
+    # 4. 检查 SQL 注入模式
+    is_safe, _ = check_sql_injection(content)
+    if not is_safe:
+        reasons.append("包含可疑字符序列")
+    
+    # 5. 检查是否有媒体文件（可选规则）
+    if REVIEW_CONFIG["require_media"] and not has_media:
+        reasons.append("未上传媒体文件")
+    
+    # 6. 检查纯符号/乱码内容
+    # 计算有意义字符的比例
+    meaningful_chars = sum(1 for c in content if c.isalnum() or '\u4e00' <= c <= '\u9fff')
+    if content_length > 0:
+        meaningful_ratio = meaningful_chars / content_length
+        if meaningful_ratio < 0.3 and content_length > 20:
+            reasons.append("内容可能为乱码")
+    
+    # 7. 检查重复字符
+    if content_length > 10:
+        # 检查是否有连续重复字符超过10个
+        for char in set(content):
+            if char * 10 in content:
+                reasons.append("包含大量重复字符")
+                break
+    
+    # 返回结果
+    if reasons:
+        return False, "；".join(reasons)
+    
+    return True, "自动通过"
+
+
 def validate_email(email: Optional[str]) -> Tuple[bool, str]:
     """
     验证邮箱格式

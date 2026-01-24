@@ -94,6 +94,18 @@ CREATE TABLE IF NOT EXISTS check_ins (
 --   }
 -- ===================================
 
+-- ===================================
+-- VERSION 5.0 - 内容审核系统
+-- 创建时间: 2026-01-25
+-- 说明: 添加内容审核功能，支持智能检测和手动审核
+-- 变更内容:
+--   - 新增 approved 字段，审核状态（1=通过, 0=待审），默认值 1
+--   - 新增 reviewed_at 字段，审核时间，可为 NULL
+--   - 新增智能检测：字数过短/过长、黑名单关键词、无媒体文件
+--   - 新增 /admin 管理后台，支持待审列表、通过、拒绝、批量操作
+--   - 管理后台使用 ADMIN_KEY 环境变量进行鉴权
+-- ===================================
+
 CREATE TABLE IF NOT EXISTS check_ins (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     content TEXT NOT NULL,
@@ -110,7 +122,10 @@ CREATE TABLE IF NOT EXISTS check_ins (
     love INTEGER DEFAULT 0,
     -- VERSION 4.0 新增字段
     file_type TEXT DEFAULT 'media',
-    archive_metadata TEXT DEFAULT NULL
+    archive_metadata TEXT DEFAULT NULL,
+    -- VERSION 5.0 新增字段
+    approved INTEGER DEFAULT 1,
+    reviewed_at DATETIME DEFAULT NULL
 );
 
 -- 点赞记录表（防止重复点赞）
@@ -145,4 +160,9 @@ CREATE INDEX IF NOT EXISTS idx_likes_checkin_ip ON likes(checkin_id, ip_address)
 -- ALTER TABLE check_ins ADD COLUMN file_type TEXT DEFAULT 'media';
 -- ALTER TABLE check_ins ADD COLUMN archive_metadata TEXT DEFAULT NULL;
 -- UPDATE check_ins SET file_type = 'media' WHERE file_type IS NULL;
+--
+-- 从 V4.0 迁移到 V5.0:
+-- ALTER TABLE check_ins ADD COLUMN approved INTEGER DEFAULT 1;
+-- ALTER TABLE check_ins ADD COLUMN reviewed_at DATETIME DEFAULT NULL;
+-- UPDATE check_ins SET approved = 1 WHERE approved IS NULL;
 -- ===================================

@@ -23,11 +23,17 @@ class CheckIn:
     # VERSION 4.0 新增字段
     file_type: str = "media"  # 'media' 或 'archive'
     archive_metadata: Optional[str] = None  # JSON 字符串，存储压缩包元数据
+    # VERSION 5.0 新增字段
+    approved: bool = True  # 审核状态：True=通过, False=待审
+    reviewed_at: Optional[datetime] = None  # 审核时间
+    # 动态计算的显示编号（不存储在数据库）
+    display_number: Optional[int] = None
     
     def to_dict(self) -> dict:
         """转换为字典"""
         return {
             "id": self.id,
+            "display_number": self.display_number,
             "content": self.content,
             "media_files": self.media_files,
             "created_at": self.created_at.isoformat() if self.created_at else None,
@@ -39,5 +45,7 @@ class CheckIn:
             "avatar": self.avatar,
             "love": self.love,
             "file_type": self.file_type,
-            "archive_metadata": self.archive_metadata
+            "archive_metadata": self.archive_metadata,
+            "approved": self.approved,
+            "reviewed_at": self.reviewed_at.isoformat() if self.reviewed_at else None
         }
