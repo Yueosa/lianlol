@@ -5,6 +5,7 @@
 import { setAdminKey, verifyKey, getStats, getPendingList, getAllList, batchApprove, batchReject } from './api.js';
 import { renderList, getSelectedIds, clearSelected, selectAll } from './list.js';
 import { showToast } from '../../common/toast.js';
+import { initTheme } from '../../common/theme.js';
 
 // 状态
 let currentStatus = 'pending';
@@ -22,6 +23,9 @@ const adminPagination = document.getElementById('adminPagination');
 
 // 初始化
 function init() {
+    // 初始化主题切换
+    initTheme();
+    
     // 尝试从 sessionStorage 恢复登录状态
     const savedKey = sessionStorage.getItem('adminKey');
     if (savedKey) {
