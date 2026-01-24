@@ -478,8 +478,362 @@ def cmd_sql(args):
             print(color(f"✅ 执行成功，影响 {cursor.rowcount} 行", Colors.GREEN))
     except Exception as e:
         print(color(f"SQL执行错误: {e}", Colors.RED))
+
+
+# ============ 审核管理命令 ============
+
+def cmd_pending(args):
+    """列出待审核记录"""
+    conn = get_connection(args.db)
+    cursor = conn.cursor()
+    
+    offset = (args.page - 1) * args.size
+    cursor.execute("""
+        SELECT id, nickname, content, review_reason, created_at 
+        FROM check_ins 
+        WHERE approved = 0
+        ORDER BY id DESC 
+        LIMIT ? OFFSET ?
+    """, (args.size, offset))
+    rows = cursor.fetchall()
+    
+    cursor.execute("SELECT COUNT(*) FROM check_ins WHERE approved = 0")
+    total = cursor.fetchone()[0]
+    total_pages = max(1, (total + args.size - 1) // args.size)
+    
+    print(color(f"\n⏳ 待审核记录 (第 {args.page}/{total_pages} 页, 共 {total} 条)\n", Colors.YELLOW))
+    print_table(["ID", "昵称", "内容", "触发原因", "创建时间"], rows)
+    print()
     
     conn.close()
+
+
+def cmd_approve(args):
+    """通过审核"""
+    conn = get_connection(args.db)
+    cursor = conn.cursor()
+    
+    # 检查记录是否存在
+    cursor.execute("SELECT id, nickname, content FROM check_ins WHERE id = ?", (args.id,))
+    row = cursor.fetchone()
+    
+    if not row:
+        print(color(f"错误: 找不到 ID={args.id} 的记录", Colors.RED))
+        conn.close()
+        return
+    
+    # 显示记录摘要
+    content_preview = row[2][:50] + "..." if row[2] and len(row[2]) > 50 else row[2]
+    print(f"\n记录摘要: ID={row[0]}, 昵称={row[1]}, 内容={content_preview}")
+    
+    if not args.force:
+        confirm = input(f"确定要通过 ID={args.id} 的审核吗? (y/N): ")
+        if confirm.lower() != 'y':
+            print("已取消")
+            conn.close()
+            return
+    
+    cursor.execute("""
+        UPDATE check_ins 
+        SET approved = 1, reviewed_at = ? 
+        WHERE id = ?
+    """, (datetime.now().isoformat(), args.id))
+    conn.commit()
+    
+    print(color(f"✅ 已通过 ID={args.id} 的审核", Colors.GREEN))
+    conn.close()
+
+
+def cmd_reject(args):
+    """拒绝并删除记录"""
+    conn = get_connection(args.db)
+    cursor = conn.cursor()
+    
+    # 检查记录是否存在
+    cursor.execute("SELECT id, nickname, content FROM check_ins WHERE id = ?", (args.id,))
+    row = cursor.fetchone()
+    
+    if not row:
+        print(color(f"错误: 找不到 ID={args.id} 的记录", Colors.RED))
+        conn.close()
+        return
+    
+    # 显示记录摘要
+    content_preview = row[2][:50] + "..." if row[2] and len(row[2]) > 50 else row[2]
+    print(f"\n记录摘要: ID={row[0]}, 昵称={row[1]}, 内容={content_preview}")
+    
+    if not args.force:
+        confirm = input(f"确定要拒绝并删除 ID={args.id} 的记录吗? (y/N): ")
+        if confirm.lower() != 'y':
+            print("已取消")
+            conn.close()
+            return
+    
+    cursor.execute("DELETE FROM check_ins WHERE id = ?", (args.id,))
+    conn.commit()
+    
+    print(color(f"✗ 已拒绝并删除 ID={args.id} 的记录", Colors.GREEN))
+    conn.close()
+
+
+def cmd_ban(args):
+    """拒绝并加入黑名单"""
+    conn = get_connection(args.db)
+    cursor = conn.cursor()
+    
+    # 获取记录和指纹
+    cursor.execute("SELECT id, nickname, content, fingerprint FROM check_ins WHERE id = ?", (args.id,))
+    row = cursor.fetchone()
+    
+    if not row:
+        print(color(f"错误: 找不到 ID={args.id} 的记录", Colors.RED))
+        conn.close()
+        return
+    
+    fingerprint = row[3]
+    if not fingerprint:
+        print(color("警告: 该记录没有指纹信息，无法加入黑名单", Colors.YELLOW))
+        # 仍然删除记录
+        if not args.force:
+            confirm = input(f"是否仍要删除 ID={args.id} 的记录? (y/N): ")
+            if confirm.lower() != 'y':
+                print("已取消")
+                conn.close()
+                return
+        cursor.execute("DELETE FROM check_ins WHERE id = ?", (args.id,))
+        conn.commit()
+        print(color(f"✗ 已删除 ID={args.id} 的记录", Colors.GREEN))
+        conn.close()
+        return
+    
+    # 显示记录摘要
+    content_preview = row[2][:50] + "..." if row[2] and len(row[2]) > 50 else row[2]
+    print(f"\n记录摘要: ID={row[0]}, 昵称={row[1]}, 内容={content_preview}")
+    print(f"指纹: {fingerprint}")
+    
+    if not args.force:
+        confirm = input(f"确定要拒绝并将此用户加入黑名单吗? (y/N): ")
+        if confirm.lower() != 'y':
+            print("已取消")
+            conn.close()
+            return
+    
+    # 添加到黑名单文件
+    blacklist_path = PROJECT_ROOT / "src" / "data" / "blacklist.txt"
+    try:
+        with open(blacklist_path, 'a') as f:
+            f.write(f"{fingerprint}\n")
+        print(color(f"🚫 已将指纹 {fingerprint} 加入黑名单", Colors.YELLOW))
+    except Exception as e:
+        print(color(f"警告: 无法写入黑名单文件: {e}", Colors.YELLOW))
+    
+    # 删除记录
+    cursor.execute("DELETE FROM check_ins WHERE id = ?", (args.id,))
+    conn.commit()
+    
+    print(color(f"✗ 已拒绝并删除 ID={args.id} 的记录", Colors.GREEN))
+    conn.close()
+
+
+def cmd_batch_approve(args):
+    """批量通过审核"""
+    conn = get_connection(args.db)
+    cursor = conn.cursor()
+    
+    ids = [int(x.strip()) for x in args.ids.split(',')]
+    
+    # 检查存在的记录数
+    placeholders = ','.join('?' * len(ids))
+    cursor.execute(f"SELECT COUNT(*) FROM check_ins WHERE id IN ({placeholders}) AND approved = 0", ids)
+    count = cursor.fetchone()[0]
+    
+    if count == 0:
+        print(color("没有找到待审核的记录", Colors.YELLOW))
+        conn.close()
+        return
+    
+    if not args.force:
+        confirm = input(f"确定要通过 {count} 条记录的审核吗? (y/N): ")
+        if confirm.lower() != 'y':
+            print("已取消")
+            conn.close()
+            return
+    
+    cursor.execute(f"""
+        UPDATE check_ins 
+        SET approved = 1, reviewed_at = ? 
+        WHERE id IN ({placeholders}) AND approved = 0
+    """, [datetime.now().isoformat()] + ids)
+    conn.commit()
+    
+    print(color(f"✅ 已通过 {cursor.rowcount} 条记录的审核", Colors.GREEN))
+    conn.close()
+
+
+def cmd_review_stats(args):
+    """显示审核统计"""
+    conn = get_connection(args.db)
+    cursor = conn.cursor()
+    
+    cursor.execute("SELECT COUNT(*) FROM check_ins")
+    total = cursor.fetchone()[0]
+    
+    cursor.execute("SELECT COUNT(*) FROM check_ins WHERE approved = 1")
+    approved = cursor.fetchone()[0]
+    
+    cursor.execute("SELECT COUNT(*) FROM check_ins WHERE approved = 0")
+    pending = cursor.fetchone()[0]
+    
+    print(color("\n📊 审核统计\n", Colors.HEADER))
+    print(f"  总记录数:   {color(str(total), Colors.CYAN)}")
+    print(f"  已通过:     {color(str(approved), Colors.GREEN)}")
+    print(f"  待审核:     {color(str(pending), Colors.YELLOW)}")
+    print()
+    
+    # 显示最近的待审核记录
+    if pending > 0:
+        cursor.execute("""
+            SELECT id, nickname, content, review_reason, created_at 
+            FROM check_ins 
+            WHERE approved = 0
+            ORDER BY id DESC 
+            LIMIT 5
+        """)
+        rows = cursor.fetchall()
+        print(color("最近待审核记录:\n", Colors.YELLOW))
+        print_table(["ID", "昵称", "内容", "触发原因", "创建时间"], rows)
+        print()
+    
+    conn.close()
+
+
+# ============ 文件清理命令 ============
+
+def cmd_orphan_files(args):
+    """查找并清理孤儿文件（uploads中没有数据库引用的文件）"""
+    import re
+    
+    uploads_dir = PROJECT_ROOT / "src" / "static" / "uploads"
+    
+    if not uploads_dir.exists():
+        print(color("uploads 目录不存在", Colors.YELLOW))
+        return
+    
+    conn = get_connection(args.db)
+    cursor = conn.cursor()
+    
+    # 获取数据库中所有引用的文件路径
+    cursor.execute("SELECT media_files FROM check_ins WHERE media_files != '[]'")
+    rows = cursor.fetchall()
+    
+    referenced_files = set()
+    for row in rows:
+        try:
+            media_list = json.loads(row[0])
+            for media_url in media_list:
+                # 从 URL 提取文件名: /static/uploads/2026-01/xxx.jpg -> 2026-01/xxx.jpg
+                match = re.search(r'/uploads/(.+)$', media_url)
+                if match:
+                    referenced_files.add(match.group(1))
+        except:
+            pass
+    
+    conn.close()
+    
+    # 扫描 uploads 目录中的所有文件
+    all_files = []
+    total_size = 0
+    
+    for root, dirs, files in os.walk(uploads_dir):
+        for file in files:
+            file_path = Path(root) / file
+            rel_path = file_path.relative_to(uploads_dir)
+            file_size = file_path.stat().st_size
+            all_files.append((str(rel_path), file_path, file_size))
+            total_size += file_size
+    
+    # 找出孤儿文件
+    orphan_files = []
+    orphan_size = 0
+    
+    for rel_path, full_path, file_size in all_files:
+        if rel_path not in referenced_files:
+            orphan_files.append((rel_path, full_path, file_size))
+            orphan_size += file_size
+    
+    # 显示统计
+    print(color("\n📁 文件清理分析\n", Colors.HEADER))
+    print(f"  {color('uploads 总文件数:', Colors.CYAN)} {len(all_files)}")
+    print(f"  {color('uploads 总大小:', Colors.CYAN)} {format_size(total_size)}")
+    print(f"  {color('数据库引用文件:', Colors.CYAN)} {len(referenced_files)}")
+    print(f"  {color('孤儿文件数:', Colors.YELLOW)} {len(orphan_files)}")
+    print(f"  {color('孤儿文件大小:', Colors.YELLOW)} {format_size(orphan_size)}")
+    print()
+    
+    if not orphan_files:
+        print(color("✅ 没有发现孤儿文件", Colors.GREEN))
+        return
+    
+    # 显示孤儿文件列表
+    if args.list or args.delete:
+        print(color("孤儿文件列表:\n", Colors.YELLOW))
+        for i, (rel_path, full_path, file_size) in enumerate(orphan_files[:50]):  # 最多显示50个
+            print(f"  {i+1}. {rel_path} ({format_size(file_size)})")
+        
+        if len(orphan_files) > 50:
+            print(f"  ... 还有 {len(orphan_files) - 50} 个文件")
+        print()
+    
+    # 删除孤儿文件
+    if args.delete:
+        if not args.force:
+            confirm = input(f"确定要删除 {len(orphan_files)} 个孤儿文件 ({format_size(orphan_size)}) 吗? (y/N): ")
+            if confirm.lower() != 'y':
+                print("已取消")
+                return
+        
+        deleted_count = 0
+        deleted_size = 0
+        errors = []
+        
+        for rel_path, full_path, file_size in orphan_files:
+            try:
+                os.remove(full_path)
+                deleted_count += 1
+                deleted_size += file_size
+            except Exception as e:
+                errors.append(f"{rel_path}: {e}")
+        
+        # 清理空目录
+        for root, dirs, files in os.walk(uploads_dir, topdown=False):
+            for dir_name in dirs:
+                dir_path = Path(root) / dir_name
+                try:
+                    if not any(dir_path.iterdir()):  # 目录为空
+                        dir_path.rmdir()
+                except:
+                    pass
+        
+        print(color(f"✅ 已删除 {deleted_count} 个文件，释放 {format_size(deleted_size)}", Colors.GREEN))
+        
+        if errors:
+            print(color(f"\n⚠️  {len(errors)} 个文件删除失败:", Colors.YELLOW))
+            for err in errors[:5]:
+                print(f"  - {err}")
+    else:
+        print(color("提示: 使用 --delete 参数删除这些文件", Colors.DIM))
+
+
+def format_size(size_bytes):
+    """格式化文件大小"""
+    if size_bytes < 1024:
+        return f"{size_bytes} B"
+    elif size_bytes < 1024 * 1024:
+        return f"{size_bytes / 1024:.1f} KB"
+    elif size_bytes < 1024 * 1024 * 1024:
+        return f"{size_bytes / 1024 / 1024:.2f} MB"
+    else:
+        return f"{size_bytes / 1024 / 1024 / 1024:.2f} GB"
 
 
 def main():
@@ -553,6 +907,44 @@ def main():
     p_sql = subparsers.add_parser('sql', help='执行原始SQL')
     p_sql.add_argument('query', help='SQL语句')
     
+    # ============ 审核管理命令 ============
+    
+    # pending 命令
+    p_pending = subparsers.add_parser('pending', help='列出待审核记录')
+    p_pending.add_argument('--page', type=int, default=1, help='页码')
+    p_pending.add_argument('--size', type=int, default=10, help='每页数量')
+    
+    # approve 命令
+    p_approve = subparsers.add_parser('approve', help='通过审核')
+    p_approve.add_argument('id', type=int, help='记录ID')
+    p_approve.add_argument('-f', '--force', action='store_true', help='跳过确认')
+    
+    # reject 命令
+    p_reject = subparsers.add_parser('reject', help='拒绝并删除记录')
+    p_reject.add_argument('id', type=int, help='记录ID')
+    p_reject.add_argument('-f', '--force', action='store_true', help='跳过确认')
+    
+    # ban 命令
+    p_ban = subparsers.add_parser('ban', help='拒绝并加入黑名单')
+    p_ban.add_argument('id', type=int, help='记录ID')
+    p_ban.add_argument('-f', '--force', action='store_true', help='跳过确认')
+    
+    # batch-approve 命令
+    p_batch_approve = subparsers.add_parser('batch-approve', help='批量通过审核')
+    p_batch_approve.add_argument('ids', help='记录ID列表，逗号分隔 (如: 1,2,3)')
+    p_batch_approve.add_argument('-f', '--force', action='store_true', help='跳过确认')
+    
+    # review-stats 命令
+    subparsers.add_parser('review-stats', help='显示审核统计')
+    
+    # ============ 文件清理命令 ============
+    
+    # orphan-files 命令
+    p_orphan = subparsers.add_parser('orphan-files', help='查找/清理孤儿文件')
+    p_orphan.add_argument('-l', '--list', action='store_true', help='列出孤儿文件')
+    p_orphan.add_argument('-d', '--delete', action='store_true', help='删除孤儿文件')
+    p_orphan.add_argument('-f', '--force', action='store_true', help='跳过确认')
+    
     args = parser.parse_args()
     
     if not args.command:
@@ -573,6 +965,15 @@ def main():
         'vacuum': cmd_vacuum,
         'clear': cmd_clear,
         'sql': cmd_sql,
+        # 审核管理命令
+        'pending': cmd_pending,
+        'approve': cmd_approve,
+        'reject': cmd_reject,
+        'ban': cmd_ban,
+        'batch-approve': cmd_batch_approve,
+        'review-stats': cmd_review_stats,
+        # 文件清理命令
+        'orphan-files': cmd_orphan_files,
     }
     
     commands[args.command](args)

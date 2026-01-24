@@ -86,6 +86,39 @@ THOUGHTS = ["今天很开心", "满足了", "期待明天", "继续加油", "生
 DISCOVERIES = ["一个宝藏网站", "新的本子作者", "绝版资源", "高清合集", "限定内容"]
 TIMES_OF_DAY = ["清晨", "午后", "傍晚", "深夜", "凌晨", "周末", "假期"]
 
+# 会触发审核的内容模板
+SPAM_CONTENT_TEMPLATES = [
+    "加微信 {wx} 看更多精彩内容",
+    "VX: {wx} 免费资源分享",
+    "➕薇💗: {wx}",
+    "点击链接领取福利 {link}",
+    "扫码进群，每日更新",
+    "代理/广告位招租，联系 {qq}",
+    "最新破解版下载：{link}",
+    "永久免费会员，加Q {qq}",
+]
+
+SPAM_WX = ["abc123", "vip888", "free666", "xyz999", "hot520"]
+
+# 超长内容（会触发长度检测）
+LONG_CONTENT_TEMPLATE = "今天的体验真的太棒了！" * 300  # 约3000字符
+
+# XSS/SQL 注入内容
+MALICIOUS_CONTENTS = [
+    "<script>alert('xss')</script>今天打卡",
+    "正常内容<img src=x onerror=alert(1)>",
+    "SELECT * FROM users; DROP TABLE check_ins;--",
+    "1' OR '1'='1' -- 打卡内容",
+    "<iframe src='http://evil.com'></iframe>",
+]
+
+# 重复字符内容
+REPEAT_CHAR_CONTENTS = [
+    "啊啊啊啊啊啊啊啊啊啊啊啊啊啊啊啊啊啊啊啊好爽",
+    "哈哈哈哈哈哈哈哈哈哈哈哈哈哈哈哈笑死了",
+    "6666666666666666666666太强了",
+]
+
 FAKE_LINKS = [
     "https://example.com/video/12345",
     "https://sample-site.net/content/abc",
@@ -172,10 +205,47 @@ def generate_datetime(days_range):
     return random_time.strftime('%Y-%m-%d %H:%M:%S')
 
 
-def create_checkin(days_range, contact_rate):
+def generate_spam_content():
+    """生成会触发审核的内容"""
+    spam_type = random.choice(['spam', 'long', 'malicious', 'repeat'])
+    
+    if spam_type == 'spam':
+        template = random.choice(SPAM_CONTENT_TEMPLATES)
+        content = template.format(
+            wx=random.choice(SPAM_WX),
+            link=random.choice(FAKE_LINKS),
+            qq=generate_qq(),
+        )
+        reason = "包含垃圾关键词"
+    elif spam_type == 'long':
+        content = LONG_CONTENT_TEMPLATE
+        reason = "内容过长"
+    elif spam_type == 'malicious':
+        content = random.choice(MALICIOUS_CONTENTS)
+        reason = "包含可疑代码"
+    else:  # repeat
+        content = random.choice(REPEAT_CHAR_CONTENTS)
+        reason = "包含大量重复字符"
+    
+    return content, reason
+
+
+def create_checkin(days_range, contact_rate, pending_rate):
     """创建一条随机打卡记录"""
+    
+    # 决定是否生成需要审核的内容
+    is_pending = random.random() < pending_rate
+    
+    if is_pending:
+        content, review_reason = generate_spam_content()
+        approved = 0
+    else:
+        content = generate_content()
+        review_reason = None
+        approved = 1
+    
     checkin = {
-        'content': generate_content(),
+        'content': content,
         'media_files': '[]',
         'created_at': generate_datetime(days_range),
         'ip_address': f"192.168.{random.randint(0, 255)}.{random.randint(1, 254)}",
@@ -184,12 +254,14 @@ def create_checkin(days_range, contact_rate):
         'qq': generate_qq() if random.random() < contact_rate else None,
         'url': generate_url() if random.random() < contact_rate * 0.5 else None,
         'avatar': random.choice(AVATARS),
-        'love': 0,  # V3.0: 点赞数默认为0
+        'love': 0,
+        'approved': approved,
+        'review_reason': review_reason,
     }
     return checkin
 
 
-def insert_checkins(db_path, count, days_range, contact_rate, clear_first):
+def insert_checkins(db_path, count, days_range, contact_rate, pending_rate, clear_first):
     """批量插入打卡记录"""
     
     # 检查数据库
@@ -212,6 +284,7 @@ def insert_checkins(db_path, count, days_range, contact_rate, clear_first):
     
     # 批量插入
     inserted = 0
+    pending_count = 0
     batch_size = 100
     
     for i in range(0, count, batch_size):
@@ -219,7 +292,9 @@ def insert_checkins(db_path, count, days_range, contact_rate, clear_first):
         batch = []
         
         for _ in range(batch_count):
-            checkin = create_checkin(days_range, contact_rate)
+            checkin = create_checkin(days_range, contact_rate, pending_rate)
+            if checkin['approved'] == 0:
+                pending_count += 1
             batch.append((
                 checkin['content'],
                 checkin['media_files'],
@@ -231,11 +306,13 @@ def insert_checkins(db_path, count, days_range, contact_rate, clear_first):
                 checkin['url'],
                 checkin['avatar'],
                 checkin['love'],
+                checkin['approved'],
+                checkin['review_reason'],
             ))
         
         cursor.executemany("""
-            INSERT INTO check_ins (content, media_files, created_at, ip_address, nickname, email, qq, url, avatar, love)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            INSERT INTO check_ins (content, media_files, created_at, ip_address, nickname, email, qq, url, avatar, love, approved, review_reason)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         """, batch)
         
         inserted += batch_count
@@ -264,11 +341,19 @@ def insert_checkins(db_path, count, days_range, contact_rate, clear_first):
     cursor.execute("SELECT COUNT(*) FROM check_ins WHERE url IS NOT NULL")
     with_url = cursor.fetchone()[0]
     
+    cursor.execute("SELECT COUNT(*) FROM check_ins WHERE approved = 0")
+    total_pending = cursor.fetchone()[0]
+    
+    cursor.execute("SELECT COUNT(*) FROM check_ins WHERE approved = 1")
+    total_approved = cursor.fetchone()[0]
+    
     conn.close()
     
     print(color("\n✅ 数据生成完成！\n", Colors.GREEN))
     print(f"  {color('新增记录:', Colors.CYAN)} {inserted}")
     print(f"  {color('总记录数:', Colors.CYAN)} {total}")
+    print(f"  {color('已通过:', Colors.GREEN)} {total_approved}")
+    print(f"  {color('待审核:', Colors.YELLOW)} {total_pending} (本次生成: {pending_count})")
     print(f"  {color('有邮箱:', Colors.CYAN)} {with_email}")
     print(f"  {color('有QQ:', Colors.CYAN)} {with_qq}")
     print(f"  {color('有链接:', Colors.CYAN)} {with_url}")
@@ -297,6 +382,8 @@ def main():
                         help='时间分布范围，过去N天 (默认: 30)')
     parser.add_argument('--contact-rate', '-c', type=float, default=0.3,
                         help='联系方式生成概率 0-1 (默认: 0.3)')
+    parser.add_argument('--pending-rate', '-p', type=float, default=0.2,
+                        help='待审核内容生成概率 0-1 (默认: 0.2)')
     parser.add_argument('--clear-first', action='store_true',
                         help='插入前先清空所有数据')
     
@@ -315,11 +402,16 @@ def main():
         print(color("错误: contact-rate 必须在 0-1 之间", Colors.RED))
         sys.exit(1)
     
+    if not 0 <= args.pending_rate <= 1:
+        print(color("错误: pending-rate 必须在 0-1 之间", Colors.RED))
+        sys.exit(1)
+    
     insert_checkins(
         db_path=args.db,
         count=args.count,
         days_range=args.days,
         contact_rate=args.contact_rate,
+        pending_rate=args.pending_rate,
         clear_first=args.clear_first
     )
 
