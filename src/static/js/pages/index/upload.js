@@ -381,10 +381,10 @@ async function preUploadArchiveNew(file, onError) {
 /**
  * 在客户端生成缩略图
  * @param {Blob} blob - 图片 Blob
- * @param {number} maxSize - 最大尺寸
+ * @param {number} maxSize - 最大尺寸（默认 250px，本地处理可以更清晰）
  * @returns {Promise<string>} - Base64 Data URI
  */
-async function generateThumbnailClient(blob, maxSize = 150) {
+async function generateThumbnailClient(blob, maxSize = 250) {
     return new Promise((resolve, reject) => {
         const img = new Image();
         const url = URL.createObjectURL(blob);
@@ -422,7 +422,8 @@ async function generateThumbnailClient(blob, maxSize = 150) {
                 ctx.drawImage(img, 0, 0, width, height);
                 
                 // 导出为 JPEG Data URL（内存中，无文件残留）
-                const dataUrl = canvas.toDataURL('image/jpeg', 0.7);
+                // 质量 0.85 比 0.7 更清晰，本地处理无需过度压缩
+                const dataUrl = canvas.toDataURL('image/jpeg', 0.85);
                 
                 // 清理 canvas 引用
                 canvas.width = 0;
