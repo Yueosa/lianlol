@@ -4,7 +4,7 @@
 
 import { validateEmail, validateURL } from '../../common/utils.js';
 import { createCheckin } from '../../common/api.js';
-import { getSelectedFiles, clearFiles, clearPreviews } from './upload.js';
+import { getSelectedFiles, getArchivePreviewData, clearFiles, clearPreviews } from './upload.js';
 import { resetAvatar } from './avatar.js';
 
 /**
@@ -121,6 +121,12 @@ async function handleSubmit(elements, showMessage, hideMessage) {
     selectedFiles.forEach(file => {
         formData.append('files', file);
     });
+
+    // 如果有压缩包预览图选择数据，添加到表单
+    const archivePreviewData = getArchivePreviewData();
+    if (archivePreviewData) {
+        formData.append('archive_preview_images', JSON.stringify(archivePreviewData));
+    }
 
     // 禁用提交按钮
     submitBtn.disabled = true;

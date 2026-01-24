@@ -20,6 +20,9 @@ class CheckIn:
     avatar: str = "🥰"
     # VERSION 3.0 新增字段
     love: int = 0
+    # VERSION 4.0 新增字段
+    file_type: str = "media"  # 'media' 或 'archive'
+    archive_metadata: Optional[str] = None  # JSON 字符串，存储压缩包元数据
     
     def to_dict(self) -> dict:
         """转换为字典"""
@@ -34,5 +37,7 @@ class CheckIn:
             "qq": self.qq,
             "url": self.url,
             "avatar": self.avatar,
-            "love": self.love
+            "love": self.love,
+            "file_type": self.file_type,
+            "archive_metadata": self.archive_metadata
         }

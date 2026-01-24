@@ -81,6 +81,24 @@ def ensure_likes_table(cursor: sqlite3.Cursor, conn: sqlite3.Connection):
     conn.commit()
 
 
+def migrate_v3_to_v4(cursor: sqlite3.Cursor, conn: sqlite3.Connection):
+    """V3.0 -> V4.0: 添加压缩包支持"""
+    if _check_column_exists(cursor, "check_ins", "file_type"):
+        return
+    
+    print("开始数据库迁移：V3.0 -> V4.0")
+    
+    # 添加 file_type 字段
+    cursor.execute("ALTER TABLE check_ins ADD COLUMN file_type TEXT DEFAULT 'media'")
+    cursor.execute("UPDATE check_ins SET file_type = 'media' WHERE file_type IS NULL")
+    
+    # 添加 archive_metadata 字段
+    cursor.execute("ALTER TABLE check_ins ADD COLUMN archive_metadata TEXT DEFAULT NULL")
+    
+    conn.commit()
+    print("数据库迁移完成：V3.0 -> V4.0")
+
+
 def run_migrations():
     """执行所有数据库迁移"""
     conn = sqlite3.connect(DB_PATH)
@@ -89,6 +107,7 @@ def run_migrations():
     try:
         migrate_v1_to_v2(cursor, conn)
         migrate_v2_to_v3(cursor, conn)
+        migrate_v3_to_v4(cursor, conn)
         ensure_likes_table(cursor, conn)
     finally:
         conn.close()

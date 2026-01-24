@@ -22,7 +22,9 @@ def create_tables():
             qq TEXT,
             url TEXT,
             avatar TEXT DEFAULT '🥰',
-            love INTEGER DEFAULT 0
+            love INTEGER DEFAULT 0,
+            file_type TEXT DEFAULT 'media',
+            archive_metadata TEXT DEFAULT NULL
         )
     """)
     

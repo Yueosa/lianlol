@@ -72,17 +72,17 @@
     </div>
 
     <div class="form-group">
-        <label>🖼️ 上传图片/视频 (最大 20MB)</label>
+        <label>🖼️ 上传图片/视频/压缩包 (最大 50MB)</label>
         <div class="upload-area" id="uploadArea">
             <div class="upload-icon">📁</div>
             <p>点击或拖拽文件到这里</p>
-            <p class="upload-hint">支持: JPG, PNG, GIF, MP4, WEBM</p>
+            <p class="upload-hint">支持: JPG, PNG, GIF, MP4, WEBM, ZIP, 7Z</p>
             <input 
                 type="file" 
                 id="fileInput" 
                 name="files" 
                 multiple 
-                accept="image/*,video/*"
+                accept="image/*,video/*,.zip,.7z,application/zip,application/x-zip-compressed,application/x-7z-compressed"
                 hidden
             >
         </div>

@@ -15,7 +15,9 @@ def create(
     email: Optional[str] = None,
     qq: Optional[str] = None,
     url: Optional[str] = None,
-    avatar: str = "🥰"
+    avatar: str = "🥰",
+    file_type: str = "media",
+    archive_metadata: Optional[str] = None
 ) -> int:
     """创建打卡记录
     
@@ -30,10 +32,10 @@ def create(
         cursor.execute("""
             INSERT INTO check_ins (
                 content, media_files, created_at, ip_address,
-                nickname, email, qq, url, avatar
+                nickname, email, qq, url, avatar, file_type, archive_metadata
             )
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-        """, (content, media_json, created_at, ip_address, nickname, email, qq, url, avatar))
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        """, (content, media_json, created_at, ip_address, nickname, email, qq, url, avatar, file_type, archive_metadata))
         
         return cursor.lastrowid
 
@@ -106,7 +108,7 @@ def get_list(
         offset = (page - 1) * limit
         data_sql = f"""
             SELECT id, content, media_files, created_at, ip_address,
-                   nickname, email, qq, url, avatar, love
+                   nickname, email, qq, url, avatar, love, file_type, archive_metadata
             FROM check_ins
             WHERE {where_sql}
             ORDER BY {sort_column} {order_direction}
@@ -125,7 +127,7 @@ def get_by_id(checkin_id: int) -> Optional[CheckIn]:
         cursor = conn.cursor()
         cursor.execute("""
             SELECT id, content, media_files, created_at, ip_address,
-                   nickname, email, qq, url, avatar, love
+                   nickname, email, qq, url, avatar, love, file_type, archive_metadata
             FROM check_ins
             WHERE id = ?
         """, (checkin_id,))
@@ -137,6 +139,17 @@ def get_by_id(checkin_id: int) -> Optional[CheckIn]:
 
 def _row_to_checkin(row) -> CheckIn:
     """将数据库行转换为 CheckIn 对象"""
+    # 获取新字段，兼容旧数据
+    try:
+        file_type = row["file_type"] or "media"
+    except (KeyError, IndexError):
+        file_type = "media"
+    
+    try:
+        archive_metadata = row["archive_metadata"]
+    except (KeyError, IndexError):
+        archive_metadata = None
+    
     return CheckIn(
         id=row["id"],
         content=row["content"],
@@ -148,5 +161,7 @@ def _row_to_checkin(row) -> CheckIn:
         qq=row["qq"],
         url=row["url"],
         avatar=row["avatar"] or "🥰",
-        love=row["love"] or 0
+        love=row["love"] or 0,
+        file_type=file_type,
+        archive_metadata=archive_metadata
     )

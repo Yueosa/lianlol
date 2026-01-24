@@ -31,12 +31,12 @@ function renderCheckinCard(checkin) {
 
     const avatar = checkin.avatar || '🥰';
     const nickname = checkin.nickname || '用户0721';
-    const { email, qq, url } = checkin;
+    const { email, qq, url, file_type, archive_metadata } = checkin;
     const love = checkin.love || 0;
     const liked = checkin.liked || false;
 
     const contactsHtml = renderContacts(email, qq, url);
-    const mediaHtml = renderMedia(mediaFiles);
+    const mediaHtml = renderMedia(mediaFiles, file_type, archive_metadata, checkin.id);
     const likeHtml = renderLikeButton(checkin.id, love, liked);
 
     return `
@@ -105,9 +105,67 @@ function renderContacts(email, qq, url) {
 /**
  * 渲染媒体文件
  */
-function renderMedia(mediaFiles) {
+function renderMedia(mediaFiles, fileType, archiveMetadata, checkinId) {
     if (mediaFiles.length === 0) return '';
 
+    // 如果是压缩包类型，显示预览图和下载按钮
+    if (fileType === 'archive') {
+        // 过滤出预览图（preview）和压缩包文件
+        const previewImages = mediaFiles.filter(url => url.includes('/previews/'));
+        const archiveFile = mediaFiles.find(url => url.includes('/archives/'));
+        
+        let metadata = null;
+        if (archiveMetadata) {
+            try {
+                metadata = typeof archiveMetadata === 'string' ? JSON.parse(archiveMetadata) : archiveMetadata;
+            } catch (e) {
+                console.error('解析压缩包元数据失败:', e);
+            }
+        }
+
+        // 渲染预览图
+        const previewHtml = previewImages.length > 0 ? previewImages.map(url => `
+            <div class="media-item" onclick="openImageModal('${url}')">
+                <img src="${url}" alt="压缩包预览">
+            </div>
+        `).join('') : '';
+
+        // 渲染压缩包信息和下载按钮
+        const archiveInfo = metadata ? `
+            <div class="archive-info">
+                <div class="archive-icon">📦</div>
+                <div class="archive-details">
+                    <div class="archive-filename">${escapeHtml(metadata.filename || '压缩包')}</div>
+                    <div class="archive-stats">
+                        ${metadata.image_count ? `📷 ${metadata.image_count} 张图片` : ''}
+                        ${metadata.total_files ? ` · 📄 ${metadata.total_files} 个文件` : ''}
+                    </div>
+                </div>
+                <a href="/api/download/${checkinId}" class="archive-download-btn" download>
+                    <span>📥 下载</span>
+                </a>
+            </div>
+        ` : archiveFile ? `
+            <div class="archive-info">
+                <div class="archive-icon">📦</div>
+                <div class="archive-details">
+                    <div class="archive-filename">压缩包文件</div>
+                </div>
+                <a href="/api/download/${checkinId}" class="archive-download-btn" download>
+                    <span>📥 下载</span>
+                </a>
+            </div>
+        ` : '';
+
+        return `
+            <div class="card-media">
+                ${previewHtml}
+            </div>
+            ${archiveInfo}
+        `;
+    }
+
+    // 普通媒体文件（图片/视频）
     const items = mediaFiles.map(url => {
         const isVideo = url.match(/\.(mp4|webm|mov|avi)$/i);
         

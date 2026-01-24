@@ -55,7 +55,7 @@ CREATE TABLE IF NOT EXISTS check_ins (
 --   - 新增 love 字段，记录点赞数，默认值 0
 --   - 新增 likes 表，记录点赞关系（IP + 记录ID），防止刷赞
 -- ===================================
-
+/*
 CREATE TABLE IF NOT EXISTS check_ins (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     content TEXT NOT NULL,
@@ -70,6 +70,47 @@ CREATE TABLE IF NOT EXISTS check_ins (
     avatar TEXT DEFAULT '🥰',
     -- VERSION 3.0 新增字段
     love INTEGER DEFAULT 0
+);
+*/
+
+-- ===================================
+-- VERSION 4.0 - 压缩包支持
+-- 创建时间: 2026-01-25
+-- 说明: 添加压缩包上传支持，包含预览图提取和下载功能
+-- 变更内容:
+--   - 新增 file_type 字段，标识文件类型（'media' 或 'archive'），默认值 'media'
+--   - 新增 archive_metadata 字段，存储压缩包元数据（JSON格式）
+--   - 支持 ZIP 和 7Z 格式压缩包
+--   - 文件大小限制从 20MB 提升到 50MB
+--   - 自动提取压缩包中的预览图片（最多3张）
+--   - 支持手动指定预览图片
+-- archive_metadata JSON 结构:
+--   {
+--     "filename": "原始文件名.zip",
+--     "size": 文件大小(字节),
+--     "preview_images": ["预览图1路径", "预览图2路径", "预览图3路径"],
+--     "total_files": 文件总数,
+--     "image_count": 图片数量
+--   }
+-- ===================================
+
+CREATE TABLE IF NOT EXISTS check_ins (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    content TEXT NOT NULL,
+    media_files TEXT DEFAULT '[]',
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    ip_address TEXT,
+    -- VERSION 2.0 新增字段
+    nickname TEXT DEFAULT '用户0721',
+    email TEXT,
+    qq TEXT,
+    url TEXT,
+    avatar TEXT DEFAULT '🥰',
+    -- VERSION 3.0 新增字段
+    love INTEGER DEFAULT 0,
+    -- VERSION 4.0 新增字段
+    file_type TEXT DEFAULT 'media',
+    archive_metadata TEXT DEFAULT NULL
 );
 
 -- 点赞记录表（防止重复点赞）
@@ -99,4 +140,9 @@ CREATE INDEX IF NOT EXISTS idx_likes_checkin_ip ON likes(checkin_id, ip_address)
 -- ALTER TABLE check_ins ADD COLUMN love INTEGER DEFAULT 0;
 -- CREATE TABLE likes (...);
 -- CREATE INDEX idx_likes_checkin_ip ON likes(checkin_id, ip_address);
+--
+-- 从 V3.0 迁移到 V4.0:
+-- ALTER TABLE check_ins ADD COLUMN file_type TEXT DEFAULT 'media';
+-- ALTER TABLE check_ins ADD COLUMN archive_metadata TEXT DEFAULT NULL;
+-- UPDATE check_ins SET file_type = 'media' WHERE file_type IS NULL;
 -- ===================================

@@ -20,7 +20,9 @@ def create_checkin(
     email: Optional[str] = None,
     qq: Optional[str] = None,
     url: Optional[str] = None,
-    avatar: str = "🥰"
+    avatar: str = "🥰",
+    file_type: str = "media",
+    archive_metadata: Optional[str] = None
 ) -> int:
     """创建打卡记录"""
     return checkin_repo.create(
@@ -31,7 +33,9 @@ def create_checkin(
         email=email,
         qq=qq,
         url=url,
-        avatar=avatar
+        avatar=avatar,
+        file_type=file_type,
+        archive_metadata=archive_metadata
     )
 
 
